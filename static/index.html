@@ -560,9 +560,11 @@
                 </div>
                 
                 <!-- Botões das Abas -->
-                <div style="display: flex; gap: 10px; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; margin-top: 4px;">
-                    <button id="tab-stock" class="tab-btn active-tab" onclick="switchTab('stock')">Monitor de Estoque</button>
-                    <button id="tab-pix" class="tab-btn" onclick="switchTab('pix')">Lote Pix Aguardando (<span id="pix-count-badge">0</span>)</button>
+                <div style="display: flex; gap: 8px; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; margin-top: 4px; overflow-x: auto; white-space: nowrap; scrollbar-width: none;">
+                    <button id="tab-stock" class="tab-btn active-tab" onclick="switchTab('stock')">📦 Estoque</button>
+                    <button id="tab-pix" class="tab-btn" onclick="switchTab('pix')">💳 Fila Pix (<span id="pix-count-badge">0</span>)</button>
+                    <button id="tab-shop" class="tab-btn" onclick="switchTab('shop')">🛒 Loja Checkout</button>
+                    <button id="tab-kpi" class="tab-btn" onclick="switchTab('kpi')">📈 KPI Analítico</button>
                 </div>
             </div>
 
@@ -587,6 +589,155 @@
                 <div id="pix-list-container" style="display: flex; flex-direction: column; gap: 12px; max-height: 450px; overflow-y: auto; padding-right: 4px;">
                     <!-- Preenchido dinamicamente via JS -->
                     <div style="text-align: center; color: var(--text-secondary); padding: 2rem;">Nenhum Pix pendente de envio.</div>
+                </div>
+            </div>
+
+            <!-- Conteúdo da Aba 3: Loja E-commerce (Checkout V2) -->
+            <div id="shop-content" class="tab-content" style="display: none; flex-direction: column; gap: 1.2rem;">
+                <div id="shop-catalog" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; width: 100%;">
+                    <!-- Preenchido dinamicamente com cards de compra -->
+                </div>
+                
+                <!-- Área Dinâmica de Checkout -->
+                <div id="checkout-form-container" style="display: none; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 1.2rem; margin-top: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">
+                        <h3 style="font-size: 1rem; font-weight: 600; color: #a5b4fc;">Finalizar Compra (Checkout)</h3>
+                        <button onclick="cancelCheckout()" style="background: transparent; border: none; color: var(--color-rose); cursor: pointer; font-size: 0.8rem;">Cancelar</button>
+                    </div>
+                    
+                    <div id="checkout-item-summary" style="display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.15); padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 0.85rem;">
+                        <!-- Sumário do item selecionado -->
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 10px; font-size: 0.85rem;">
+                        <div>
+                            <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">Nome Completo</label>
+                            <input type="text" id="chk-name" value="Ricardo Cruz" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none;"/>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px;">
+                            <div>
+                                <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">CPF do Comprador</label>
+                                <input type="text" id="chk-cpf" value="123.456.789-00" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none;"/>
+                            </div>
+                            <div>
+                                <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">Forma de Pagamento</label>
+                                <select id="chk-payment" onchange="toggleCardInputs()" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none;">
+                                    <option value="PIX">Pix (Expiração Curta)</option>
+                                    <option value="CREDIT_CARD">Cartão de Crédito</option>
+                                    <option value="BOLETO">Boleto Bancário</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">CEP de Destino</label>
+                                <div style="display: flex; gap: 5px;">
+                                    <input type="text" id="chk-cep" value="01310-100" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none;"/>
+                                    <button onclick="calculateShippingPrice()" style="padding: 0 10px; background: var(--color-indigo); border: none; border-radius: 6px; color: #fff; font-size: 0.75rem; cursor: pointer; font-weight: 500;">Calcular</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">Quantidade</label>
+                                <input type="number" id="chk-qty" value="1" min="1" onchange="calculateShippingPrice()" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none;"/>
+                            </div>
+                        </div>
+                        <div>
+                            <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">Logradouro de Entrega</label>
+                            <input type="text" id="chk-address" readonly placeholder="Preenchido via CEP" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); color: var(--text-secondary); outline: none;"/>
+                        </div>
+                        
+                        <!-- Campos do Cartão de Crédito -->
+                        <div id="card-fields-container" style="display: none; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin-top: 5px;">
+                            <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">Número do Cartão de Crédito</label>
+                            <input type="text" id="chk-card-num" value="4532 9012 3456 7890" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none; margin-bottom: 8px;"/>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <div>
+                                    <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">Validade (MM/AA)</label>
+                                    <input type="text" id="chk-card-val" value="12/30" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none;"/>
+                                </div>
+                                <div>
+                                    <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">CVV</label>
+                                    <input type="text" id="chk-card-cvv" value="123" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none;"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Resumo Financeiro -->
+                        <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-secondary);">Valor dos Produtos:</span>
+                                <span style="font-weight: 500;" id="summary-prod-val">R$ 0,00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-secondary);">Custo de Frete (Dinâmico):</span>
+                                <span style="font-weight: 500; color: var(--color-cyan);" id="summary-shipping-val">R$ 0,00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; font-weight: 600;">
+                                <span>Valor Total do Pedido:</span>
+                                <span style="color: var(--color-emerald);" id="summary-total-val">R$ 0,00</span>
+                            </div>
+                            <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px;" id="summary-logistics-info"></div>
+                        </div>
+
+                        <button onclick="submitCheckoutOrder()" class="action-btn btn-approve" style="width: 100%; padding: 12px; font-size: 0.95rem; font-weight: 600; margin-top: 8px; background: linear-gradient(90deg, var(--color-indigo), var(--color-cyan)); border: none; color: #070a13; box-shadow: var(--glow-indigo);">🔒 Confirmar e Fechar Pedido</button>
+                    </div>
+                </div>
+                
+                <!-- Modal Interativo do Gateway de Pagamento -->
+                <div id="payment-gateway-modal" style="display: none; background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(13, 20, 38, 0.9) 100%); border: 2px solid var(--color-emerald); border-radius: 16px; padding: 1.5rem; text-align: center; margin-top: 10px; box-shadow: var(--glow-emerald);">
+                    <h3 id="gateway-title" style="color: var(--color-emerald); font-size: 1.1rem; font-weight: 700; margin-bottom: 8px;">💳 Gateway de Pagamento Multifase</h3>
+                    <p id="gateway-subtitle" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;"></p>
+                    
+                    <!-- Área Dinâmica do Tipo de Pagamento -->
+                    <div id="gateway-dynamic-area" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                        <!-- QR Code, Dados de Boleto, ou Processamento -->
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="cancelPayment()" class="action-btn btn-reject" style="flex: 1; padding: 8px; font-size: 0.8rem;">Cancelar</button>
+                        <button id="gateway-confirm-btn" onclick="executeGatewayPayment()" class="action-btn btn-approve" style="flex: 1.5; padding: 8px; font-size: 0.8rem;">Simular Confirmação de Pagamento</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conteúdo da Aba 4: KPI Analítico (Window Functions V2) -->
+            <div id="kpi-content" class="tab-content" style="display: none; flex-direction: column; gap: 1rem;">
+                <!-- Cards de KPI -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; width: 100%;">
+                    <div style="background: rgba(16, 185, 129, 0.03); border: 1px solid rgba(16, 185, 129, 0.1); padding: 12px; border-radius: 12px; text-align: center;">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">Faturamento Total (Pago)</span>
+                        <span style="font-size: 1.15rem; font-weight: 700; color: var(--color-emerald); display: block; margin-top: 4px;" id="kpi-total-revenue">R$ 0,00</span>
+                    </div>
+                    <div style="background: rgba(6, 182, 212, 0.03); border: 1px solid rgba(6, 182, 212, 0.1); padding: 12px; border-radius: 12px; text-align: center;">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">Ticket Médio por Venda</span>
+                        <span style="font-size: 1.15rem; font-weight: 700; color: var(--color-cyan); display: block; margin-top: 4px;" id="kpi-ticket-avg">R$ 0,00</span>
+                    </div>
+                    <div style="background: rgba(245, 158, 11, 0.03); border: 1px solid rgba(245, 158, 11, 0.1); padding: 12px; border-radius: 12px; text-align: center;">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">Taxa de Conversão</span>
+                        <span style="font-size: 1.15rem; font-weight: 700; color: var(--color-amber); display: block; margin-top: 4px;" id="kpi-conversion-rate">0.00 %</span>
+                    </div>
+                    <div style="background: rgba(99, 102, 241, 0.03); border: 1px solid rgba(99, 102, 241, 0.1); padding: 12px; border-radius: 12px; text-align: center;">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">Vendas / Checkouts</span>
+                        <span style="font-size: 1.15rem; font-weight: 700; color: #a5b4fc; display: block; margin-top: 4px;" id="kpi-total-orders">0 / 0</span>
+                    </div>
+                </div>
+
+                <!-- Gráfico/Listagem de Giro de Estoque Analítico -->
+                <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255,255,255,0.04); border-radius: 14px; padding: 15px;">
+                    <h4 style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">📊 Desempenho e Giro de Estoque</h4>
+                    <div id="kpi-inventory-list" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Preenchido via JS com unidades vendidas vs atuais -->
+                        <div style="text-align: center; color: var(--text-secondary); font-size: 0.8rem; padding: 1rem;">Nenhum produto vendido ainda.</div>
+                    </div>
+                </div>
+
+                <!-- Painel de Faturamento Acumulado Diário (Window Functions proof) -->
+                <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255,255,255,0.04); border-radius: 14px; padding: 15px;">
+                    <h4 style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">📈 Faturamento Diário Acumulado (SQL Window)</h4>
+                    <div id="kpi-revenue-table" style="max-height: 120px; overflow-y: auto; font-family: monospace; font-size: 0.75rem; color: var(--text-secondary); padding-right: 4px;">
+                        <!-- Preenchido via JS -->
+                        <div style="text-align: center; color: var(--text-secondary); padding: 1rem;">Sem dados de vendas acumuladas no momento.</div>
+                    </div>
                 </div>
             </div>
         </section>
