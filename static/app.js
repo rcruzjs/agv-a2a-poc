@@ -1,4 +1,4 @@
-// Real-Time Dashboard Javascript Logic
+// UCP Real-Time Dashboard & E-commerce Logic - Version 3
 const productsContainer = document.getElementById("products-container");
 const a2uiRoot = document.getElementById("a2ui-root");
 const consoleRoot = document.getElementById("console-root");
@@ -87,14 +87,14 @@ function updateStockGrid(products) {
         const card = document.createElement("div");
         card.className = "product-card";
         card.innerHTML = `
-            <div class="product-meta" style="display: flex; align-items: center; gap: 15px; width: 100%; margin-bottom: 0.6rem;">
-                <img src="${imageUrl}" alt="${p.name}" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover; border: 1px solid var(--card-border); box-shadow: 0 4px 10px rgba(0,0,0,0.3);" />
-                <div style="flex: 1;">
-                    <span class="product-name" style="display: block; font-weight: 500; font-size: 0.95rem; margin-bottom: 4px;">${p.name}</span>
-                    <span class="product-sku" style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; background: rgba(99, 102, 241, 0.15); color: #a5b4fc; padding: 2px 6px; border-radius: 4px;">${p.sku}</span>
+            <div class="product-meta" style="display: flex; align-items: center; gap: 12px; width: 100%; margin-bottom: 0.6rem;">
+                <img src="${imageUrl}" alt="${p.name}" style="width: 42px; height: 42px; border-radius: 8px; object-fit: cover; border: 1px solid var(--card-border); box-shadow: 0 4px 10px rgba(0,0,0,0.3);" />
+                <div style="flex: 1; min-width: 0;">
+                    <span class="product-name" style="display: block; font-weight: 500; font-size: 0.85rem; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.name}</span>
+                    <span class="product-sku" style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; background: rgba(99, 102, 241, 0.12); color: #a5b4fc; padding: 1px 4px; border-radius: 3px;">${p.sku}</span>
                 </div>
-                <div class="product-qty-info" style="color: ${isBreached ? 'var(--color-rose)' : 'var(--color-emerald)'}; font-weight: 500; font-size: 0.95rem; white-space: nowrap;">
-                    ${p.qtd_atual} / ${p.qtd_minima} <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: normal;">(Mín)</span>
+                <div class="product-qty-info" style="color: ${isBreached ? 'var(--color-rose)' : 'var(--color-emerald)'}; font-weight: 500; font-size: 0.85rem; white-space: nowrap;">
+                    ${p.qtd_atual} / ${p.qtd_minima} <span style="font-size: 0.7rem; color: var(--text-secondary); font-weight: normal;">(Mín)</span>
                 </div>
             </div>
             <div class="progress-container">
@@ -139,42 +139,42 @@ function renderActionCard(order) {
                 <span class="action-order-id">${order.order_id}</span>
             </div>
             <div class="action-body">
-                <h3 class="action-title">Autorizar Compra de Suprimentos</h3>
-                <p class="action-subtitle">O Agente de Compras detectou estoque baixo de <strong>${order.product_name}</strong> e estruturou um pedido de reposição.</p>
+                <h3 class="action-title">Autorizar Compra</h3>
+                <p class="action-subtitle">Ruptura identificada no SKU <strong>${order.sku}</strong>. Agente FastMCP propõe reabastecimento.</p>
                 
-                <div class="action-details" style="display: grid; grid-template-columns: 64px 1fr 1fr; gap: 12px; font-size: 0.85rem; align-items: center;">
-                    <img src="${imageUrl}" alt="${order.product_name}" style="width: 64px; height: 64px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); grid-row: span 2;" />
+                <div class="action-details">
+                    <img src="${imageUrl}" alt="${order.product_name}" style="width: 56px; height: 56px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); grid-row: span 2;" />
                     <div class="detail-item" style="grid-column: span 2;">
-                        <span class="detail-label">Item / SKU</span>
-                        <span class="detail-value">${order.product_name} (${order.sku})</span>
+                        <span class="detail-label">Nome Hardware</span>
+                        <span class="detail-value" title="${order.product_name}">${order.product_name}</span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">Quantidade de Compra</span>
+                        <span class="detail-label">Quantidade</span>
                         <span class="detail-value">${order.qty} un</span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">Fornecedor Selecionado</span>
-                        <span class="detail-value">${order.supplier} (prazo: ${order.delivery_days} dias)</span>
+                        <span class="detail-label">Fornecedor</span>
+                        <span class="detail-value" title="${order.supplier}">${order.supplier}</span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">Preço Unitário</span>
+                        <span class="detail-label">Preço Cotado</span>
                         <span class="detail-value">R$ ${order.price.toFixed(2)}</span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">Valor Total Autorizável</span>
+                        <span class="detail-label">Total Fatura</span>
                         <span class="detail-value highlight">R$ ${order.total.toFixed(2)}</span>
                     </div>
                 </div>
             </div>
             <div class="action-footer">
-                <button class="action-btn btn-reject" onclick="handlePurchaseAction('${order.order_id}', 'reject')">Recusar Pedido</button>
-                <button class="action-btn btn-approve" onclick="handlePurchaseAction('${order.order_id}', 'approve')">Autorizar Pagamento</button>
+                <button class="action-btn btn-reject" onclick="handlePurchaseAction('${order.order_id}', 'reject')">Recusar</button>
+                <button class="action-btn btn-approve" onclick="handlePurchaseAction('${order.order_id}', 'approve')">Autorizar</button>
             </div>
         </div>
     `;
     
     // Add visual bounce animation to console
-    addConsoleLog(`🔔 [Interface] A2UI: Card de ação renderizado para o pedido '${order.order_id}'. Autorização humana necessária.`);
+    addConsoleLog(`🔔 [Interface] A2UI: Card de ação recebido para o pedido '${order.order_id}'.`);
 }
 
 function clearActionCard() {
@@ -184,8 +184,8 @@ function clearActionCard() {
                 <circle cx="12" cy="12" r="10"/>
                 <path d="m9 12 2 2 4-4"/>
             </svg>
-            <p style="font-weight: 500;">Status do Sistema Seguro</p>
-            <p style="font-size: 0.85rem; color: var(--text-secondary);">Aguardando eventos de ruptura do gRPC para processar autorizações.</p>
+            <p style="font-weight: 500;">Sistema de Segurança Ativo</p>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">Aguardando rupturas de estoque B2B para processar autorizações.</p>
         </div>
     `;
 }
@@ -213,9 +213,9 @@ function handlePurchaseAction(orderId, action) {
     });
 }
 
-// --- Operações da Aba de Pix em Lote & Outras Abas (V2) ---
+// --- Operações da Aba de Pix em Lote & Outras Abas (V3) ---
 const pixCountBadge = document.getElementById("pix-count-badge");
-const pixListContainer = document.getElementById("pix-list-container");
+const pixLedgerBody = document.getElementById("pix-ledger-body");
 
 // Estados Globais de Checkout
 let activeCheckoutSku = "";
@@ -270,42 +270,57 @@ function fetchPendingPix() {
     .then(res => res.json())
     .then(data => {
         pixCountBadge.innerText = data.length;
+        document.getElementById("summary-pix-count").innerText = data.length;
+        
+        let totalAmount = 0.0;
+        data.forEach(tx => totalAmount += (tx.price * tx.qty));
+        document.getElementById("summary-pix-amount").innerText = `R$ ${totalAmount.toFixed(2)}`;
+        
         if (!data || data.length === 0) {
-            pixListContainer.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 2.5rem 1rem;">Nenhum Pix pendente de envio para o banco no momento.</div>`;
+            pixLedgerBody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 3rem;">Nenhum Pix pendente de envio para o banco.</td>
+                </tr>
+            `;
             return;
         }
         
-        const skuImageMap = {
-            "SKU-001": "/static/images/ssd_nvme.png",
-            "SKU-002": "/static/images/ram_ddr5.png",
-            "SKU-003": "/static/images/cpu_i7.png",
-            "SKU-004": "/static/images/gpu_rtx.png"
-        };
-        
-        pixListContainer.innerHTML = "";
+        pixLedgerBody.innerHTML = "";
         data.forEach(tx => {
-            const imageUrl = skuImageMap[tx.sku] || "/static/images/ssd_nvme.png";
-            const row = document.createElement("div");
-            row.className = "product-card";
-            row.style.background = "rgba(245, 158, 11, 0.02)";
-            row.style.border = "1px solid rgba(245, 158, 11, 0.1)";
-            row.style.padding = "10px 12px";
+            const row = document.createElement("tr");
+            row.style.cursor = "pointer";
+            row.title = "Clique para inspecionar o JSON da transação";
             row.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
-                    <img src="${imageUrl}" alt="${tx.supplier}" style="width: 36px; height: 36px; border-radius: 6px; object-fit: cover;" />
-                    <div style="flex: 1; font-size: 0.8rem;">
-                        <div style="font-weight: 600; color: var(--text-primary);">${tx.supplier}</div>
-                        <div style="color: var(--text-secondary); font-size: 0.75rem; font-family: monospace;">Pix (${tx.tipo_chave}): ${tx.chave_pix}</div>
-                        <div style="color: var(--text-secondary); font-size: 0.7rem; margin-top: 2px;">ID: ${tx.id} | ${tx.timestamp.replace('T', ' ').substring(0, 19)}</div>
-                    </div>
-                    <div style="text-align: right;">
-                        <span style="color: var(--color-amber); font-weight: 600; font-size: 0.9rem;">R$ ${(tx.price * tx.qty).toFixed(2)}</span>
-                        <br/>
-                        <div style="font-size: 0.65rem; color: #a5b4fc; background: rgba(99,102,241,0.15); padding: 1px 4px; border-radius: 4px; display: inline-block; margin-top: 2px;">Lote Pix</div>
-                    </div>
-                </div>
+                <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #a5b4fc; font-weight: 500;">${tx.id}</td>
+                <td style="font-weight: 600; color: var(--text-primary);">${tx.supplier}</td>
+                <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-secondary);">
+                    <span style="font-size: 0.65rem; background: rgba(6,182,212,0.1); color: var(--color-cyan); padding: 1px 4px; border-radius: 3px; margin-right: 4px;">${tx.tipo_chave}</span>${tx.chave_pix}
+                </td>
+                <td style="font-size: 0.8rem; color: var(--text-primary);">${tx.sku}</td>
+                <td>${tx.qty} un</td>
+                <td style="color: var(--color-amber); font-weight: 600;">R$ ${(tx.price * tx.qty).toFixed(2)}</td>
+                <td style="font-size: 0.75rem; font-family: monospace;">${tx.timestamp.replace('T', ' ').substring(0, 19)}</td>
             `;
-            pixListContainer.appendChild(row);
+            
+            // JSON inspection sub-row
+            const detailRow = document.createElement("tr");
+            detailRow.style.display = "none";
+            detailRow.style.background = "rgba(0,0,0,0.5)";
+            detailRow.innerHTML = `
+                <td colspan="7" style="padding: 12px 16px;">
+                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #38bdf8; margin-bottom: 6px; font-weight: 600;">📋 METADADOS DETALHADOS DA TRANSAÇÃO (JSON):</div>
+                    <pre style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; background: #030508; padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); color: #cbd5e1; overflow-x: auto;">${JSON.stringify(tx, null, 2)}</pre>
+                </td>
+            `;
+            
+            row.addEventListener("click", () => {
+                const isCollapsed = detailRow.style.display === "none";
+                detailRow.style.display = isCollapsed ? "table-row" : "none";
+                row.style.background = isCollapsed ? "rgba(255, 255, 255, 0.02)" : "";
+            });
+            
+            pixLedgerBody.appendChild(row);
+            pixLedgerBody.appendChild(detailRow);
         });
     })
     .catch(err => {
@@ -341,7 +356,7 @@ function exportPixBatchToServer() {
 }
 
 // ==========================================
-// MÓDULOS DE FRONTEND DA VERSÃO 2 (E-COMMERCE)
+// MÓDULOS DE FRONTEND DA VERSÃO 3 (E-COMMERCE)
 // ==========================================
 
 function fetchShopCatalog() {
@@ -373,14 +388,10 @@ function fetchShopCatalog() {
             const isOutOfStock = p.qtd_atual <= 0;
             
             const card = document.createElement("div");
-            card.className = "product-card";
-            card.style.display = "flex";
-            card.style.flexDirection = "column";
-            card.style.justifyContent = "space-between";
-            card.style.padding = "12px";
+            card.className = "bento-card";
             card.innerHTML = `
                 <div>
-                    <img src="${imageUrl}" alt="${p.name}" style="width: 100%; height: 100px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 8px;"/>
+                    <img src="${imageUrl}" alt="${p.name}" class="bento-img" />
                     <h4 style="font-size: 0.85rem; font-weight: 600; margin-bottom: 2px;">${p.name}</h4>
                     <span style="font-family: monospace; font-size: 0.7rem; color: var(--text-secondary);">${p.sku}</span>
                     
@@ -412,15 +423,14 @@ function openCheckout(sku, name, imageUrl, price) {
     activeCheckoutPrice = price;
     activeCheckoutProductName = name;
     
-    document.getElementById("shop-catalog").style.display = "none";
-    document.getElementById("checkout-form-container").style.display = "block";
+    document.getElementById("checkout-drawer").classList.add("open");
     document.getElementById("payment-gateway-modal").style.display = "none";
     
     document.getElementById("checkout-item-summary").innerHTML = `
         <img src="${imageUrl}" alt="${name}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;" />
         <div>
-            <div style="font-weight: 600; color: #fff;">${name}</div>
-            <div style="color: var(--text-secondary); font-size: 0.75rem;">SKU: ${sku} | Preço: R$ ${price.toFixed(2)}</div>
+            <div style="font-weight: 600; color: #fff; font-size: 0.85rem;">${name}</div>
+            <div style="color: var(--text-secondary); font-size: 0.72rem;">SKU: ${sku} | R$ ${price.toFixed(2)}</div>
         </div>
     `;
     
@@ -429,8 +439,7 @@ function openCheckout(sku, name, imageUrl, price) {
 }
 
 function cancelCheckout() {
-    document.getElementById("shop-catalog").style.display = "grid";
-    document.getElementById("checkout-form-container").style.display = "none";
+    document.getElementById("checkout-drawer").classList.remove("open");
     document.getElementById("payment-gateway-modal").style.display = "none";
 }
 
@@ -459,7 +468,7 @@ function calculateShippingPrice() {
         document.getElementById("summary-shipping-val").innerText = `R$ ${frete.toFixed(2)}`;
         document.getElementById("summary-total-val").innerText = `R$ ${total.toFixed(2)}`;
         document.getElementById("summary-logistics-info").innerHTML = `
-            📦 Peso Estimado: ${data.peso_total_kg.toFixed(3)} kg | Cubagem: ${data.volume_cubagem_m3.toFixed(4)} m³
+            📦 Peso: ${data.peso_total_kg.toFixed(3)} kg | Cubagem: ${data.volume_cubagem_m3.toFixed(4)} m³
         `;
     })
     .catch(err => {
@@ -516,7 +525,7 @@ function submitCheckoutOrder() {
 }
 
 function openGatewayModal(order, payment) {
-    document.getElementById("checkout-form-container").style.display = "none";
+    document.getElementById("checkout-drawer").classList.remove("open");
     
     const gatewayModal = document.getElementById("payment-gateway-modal");
     const title = document.getElementById("gateway-title");
@@ -524,42 +533,41 @@ function openGatewayModal(order, payment) {
     const dynamicArea = document.getElementById("gateway-dynamic-area");
     
     gatewayModal.style.display = "block";
-    subtitle.innerText = `ID do Pedido: ${order.id_pedido} | Valor Total: R$ ${order.valor_total.toFixed(2)}`;
+    subtitle.innerText = `Pedido: ${order.id_pedido} | Total: R$ ${order.valor_total.toFixed(2)}`;
     
     if (payment === "PIX") {
-        title.innerHTML = "⚡ Gateway de Pagamento: PIX IMEDIATO";
+        title.innerHTML = "⚡ Gateway de Pagamento: PIX";
         title.style.color = "var(--color-amber)";
         gatewayModal.style.borderColor = "var(--color-amber)";
         gatewayModal.style.boxShadow = "var(--glow-amber)";
         
         dynamicArea.innerHTML = `
-            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 10px;">Escaneie o QR Code ou copie o código Copia e Cola para pagar:</p>
-            <div style="background: white; padding: 10px; width: 140px; height: 140px; margin: 0 auto 10px; border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                <!-- Falso QR Code usando emoji -->
-                <span style="font-size: 80px; filter: grayscale(1);">🏁</span>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 10px;">Escaneie o QR Code ou copie o Pix Copia e Cola:</p>
+            <div style="background: white; padding: 10px; width: 120px; height: 120px; margin: 0 auto 10px; border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                <span style="font-size: 70px; filter: grayscale(1);">🏁</span>
             </div>
-            <code style="font-family: monospace; font-size: 0.7rem; background: #000; padding: 6px; border-radius: 4px; display: block; color: var(--color-amber); word-break: break-all;">00020101021226830014br.gov.bcb.pix2561api.itau/pix/v2/${order.id_pedido}5204000053039865802BR5912Ricardo_Cruz6009Sao_Paulo62070503***6304CA12</code>
+            <code style="font-family: monospace; font-size: 0.65rem; background: #000; padding: 6px; border-radius: 4px; display: block; color: var(--color-amber); word-break: break-all;">00020101021226830014br.gov.bcb.pix2561api.itau/pix/v2/${order.id_pedido}5204000053039865802BR5912Ricardo_Cruz6009Sao_Paulo62070503***6304CA12</code>
         `;
     } else if (payment === "CREDIT_CARD") {
-        title.innerHTML = "💳 Gateway de Pagamento: CARTÃO DE CRÉDITO";
+        title.innerHTML = "💳 Gateway: CARTÃO DE CRÉDITO";
         title.style.color = "var(--color-indigo)";
         gatewayModal.style.borderColor = "var(--color-indigo)";
         gatewayModal.style.boxShadow = "var(--glow-indigo)";
         
         dynamicArea.innerHTML = `
-            <p style="font-size: 0.85rem; color: #fff; font-weight: 500;">Checagem Anti-Fraude Síncrona Ativa</p>
-            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">Seu CPF está sendo avaliado em tempo real no banco de dados consolidado. Clique abaixo para rodar a simulação.</p>
+            <p style="font-size: 0.85rem; color: #fff; font-weight: 500;">Score Anti-Fraude Síncrono Ativo</p>
+            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">Validação síncrona de CPF ativa no banco centralizador. Clique abaixo para simular autorização.</p>
         `;
     } else {
-        title.innerHTML = "📄 Gateway de Pagamento: BOLETO BANCÁRIO";
+        title.innerHTML = "📄 Gateway de Pagamento: BOLETO";
         title.style.color = "var(--color-cyan)";
         gatewayModal.style.borderColor = "var(--color-cyan)";
         gatewayModal.style.boxShadow = "var(--glow-cyan)";
         
         dynamicArea.innerHTML = `
-            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 8px;">Linha Digitável do Boleto:</p>
-            <code style="font-family: monospace; font-size: 0.75rem; background: #000; padding: 6px; border-radius: 4px; display: block; color: var(--color-cyan); font-weight: bold; letter-spacing: 0.5px;">34191.79001 01043.513184 91020.150008 7 90050000${order.valor_total.toFixed(0)}00</code>
-            <p style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 8px;">Compensação em até 48 horas úteis.</p>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 8px;">Código de Barras do Boleto:</p>
+            <code style="font-family: monospace; font-size: 0.7rem; background: #000; padding: 6px; border-radius: 4px; display: block; color: var(--color-cyan); font-weight: bold; letter-spacing: 0.5px; word-break: break-all;">34191.79001 01043.513184 91020.150008 7 90050000${order.valor_total.toFixed(0)}00</code>
+            <p style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 6px;">Compensação bancária simulada.</p>
         `;
     }
 }
@@ -585,7 +593,7 @@ function executeGatewayPayment() {
             return;
         }
         
-        alert("✅ Pagamento aprovado! O Worker de Logística foi despertado para processar a remessa física.");
+        alert("✅ Pagamento aprovado com sucesso! O Worker de Logística foi despertado.");
         cancelCheckout();
         switchTab("stock");
     })
@@ -596,8 +604,96 @@ function executeGatewayPayment() {
 }
 
 // ==========================================
-// MÓDULOS DE KPI & WINDOW FUNCTIONS (V2)
+// MÓDULOS DE KPI & REATIVIDADE SVG (V3)
 // ==========================================
+
+function drawSvgChart(dailyRevenue) {
+    const container = document.getElementById("svg-chart-container");
+    if (!dailyRevenue || dailyRevenue.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: var(--text-secondary); font-size: 0.8rem; padding: 2rem;">Aguardando transações para plotagem do faturamento acumulado...</div>`;
+        return;
+    }
+    
+    const width = container.clientWidth || 500;
+    const height = 180;
+    const padding = 25;
+    
+    const chartWidth = width - (padding * 2);
+    const chartHeight = height - (padding * 2);
+    
+    // Find min/max values
+    const maxVal = Math.max(...dailyRevenue.map(d => d.faturamento_acumulado)) * 1.15 || 100;
+    const minVal = 0;
+    
+    const pointsCount = dailyRevenue.length;
+    
+    // Generate coordinates
+    const points = dailyRevenue.map((d, index) => {
+        const x = padding + (pointsCount > 1 ? (index / (pointsCount - 1)) * chartWidth : chartWidth / 2);
+        const y = height - padding - ((d.faturamento_acumulado / maxVal) * chartHeight);
+        return { x, y, data: d };
+    });
+    
+    let linePath = "";
+    let areaPath = "";
+    
+    if (points.length > 0) {
+        linePath = `M ${points[0].x} ${points[0].y}`;
+        areaPath = `M ${points[0].x} ${height - padding} L ${points[0].x} ${points[0].y}`;
+        
+        for (let i = 1; i < points.length; i++) {
+            linePath += ` L ${points[i].x} ${points[i].y}`;
+            areaPath += ` L ${points[i].x} ${points[i].y}`;
+        }
+        
+        areaPath += ` L ${points[points.length - 1].x} ${height - padding} Z`;
+    }
+    
+    let svgContent = `
+        <svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" style="overflow: visible;">
+            <defs>
+                <linearGradient id="chart-gradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="var(--color-emerald)" stop-opacity="0.25" />
+                    <stop offset="100%" stop-color="var(--color-emerald)" stop-opacity="0.0" />
+                </linearGradient>
+                <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
+                    <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="var(--color-emerald)" flood-opacity="0.4" />
+                </filter>
+            </defs>
+            
+            <!-- Grid lines -->
+            <line x1="${padding}" y1="${padding}" x2="${width - padding}" y2="${padding}" stroke="rgba(255,255,255,0.02)" stroke-width="1" />
+            <line x1="${padding}" y1="${padding + chartHeight/2}" x2="${width - padding}" y2="${padding + chartHeight/2}" stroke="rgba(255,255,255,0.02)" stroke-width="1" />
+            <line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
+            
+            <!-- Area path -->
+            <path d="${areaPath}" fill="url(#chart-gradient)" />
+            
+            <!-- Line path -->
+            <path d="${linePath}" fill="none" stroke="var(--color-emerald)" stroke-width="2.5" filter="url(#glow)" stroke-linecap="round" stroke-linejoin="round" />
+    `;
+    
+    // Add point dots
+    points.forEach(p => {
+        svgContent += `
+            <circle cx="${p.x}" cy="${p.y}" r="4" fill="#030508" stroke="var(--color-emerald)" stroke-width="2" style="cursor: pointer; transition: r 0.2s;" 
+                    onmouseover="this.setAttribute('r', '6')" onmouseout="this.setAttribute('r', '4')">
+                <title>${p.data.data_dia}\nAcumulado: R$ ${p.data.faturamento_acumulado.toFixed(2)}\nFaturamento do dia: R$ ${p.data.valor_dia.toFixed(2)}</title>
+            </circle>
+        `;
+    });
+    
+    // Add date labels
+    if (points.length > 0) {
+        svgContent += `
+            <text x="${points[0].x}" y="${height - 8}" fill="var(--text-secondary)" font-size="8" font-family="monospace" text-anchor="middle">${points[0].data.data_dia.substring(5)}</text>
+            <text x="${points[points.length - 1].x}" y="${height - 8}" fill="var(--text-secondary)" font-size="8" font-family="monospace" text-anchor="middle">${points[points.length - 1].data.data_dia.substring(5)}</text>
+        `;
+    }
+    
+    svgContent += `</svg>`;
+    container.innerHTML = svgContent;
+}
 
 function fetchAnalyticsData() {
     const revTable = document.getElementById("kpi-revenue-table");
@@ -612,24 +708,27 @@ function fetchAnalyticsData() {
         document.getElementById("kpi-conversion-rate").innerText = `${kpis.taxa_conversao.toFixed(2)} %`;
         document.getElementById("kpi-total-orders").innerText = `${kpis.total_pagos} / ${kpis.total_pedidos}`;
         
+        // Draw the responsive SVG chart
+        drawSvgChart(analytics.daily_revenue);
+        
         if (!analytics.daily_revenue || analytics.daily_revenue.length === 0) {
             revTable.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 1rem;">Sem dados de faturamento consolidado.</div>`;
         } else {
             revTable.innerHTML = `
-                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem;">
                     <thead>
-                        <tr style="color: var(--text-primary); border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.7rem; text-transform: uppercase;">
-                            <th style="padding: 4px;">Data</th>
-                            <th style="padding: 4px;">Faturamento Dia</th>
-                            <th style="padding: 4px; text-align: right; color: var(--color-emerald);">Acumulado (Window)</th>
+                        <tr style="color: var(--text-primary); border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 0.7rem; text-transform: uppercase;">
+                            <th style="padding: 6px 8px;">Data de Fechamento</th>
+                            <th style="padding: 6px 8px;">Valor do Dia</th>
+                            <th style="padding: 6px 8px; text-align: right; color: var(--color-emerald);">Faturamento Acumulado</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${analytics.daily_revenue.map(r => `
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
-                                <td style="padding: 4px; color: var(--text-primary); font-weight: 500;">${r.data_dia}</td>
-                                <td style="padding: 4px; color: var(--text-secondary);">R$ ${r.valor_dia.toFixed(2)}</td>
-                                <td style="padding: 4px; text-align: right; color: var(--color-emerald); font-weight: 600;">R$ ${r.faturamento_acumulado.toFixed(2)}</td>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                                <td style="padding: 6px 8px; color: var(--text-primary); font-weight: 500;">${r.data_dia}</td>
+                                <td style="padding: 6px 8px; color: var(--text-secondary);">R$ ${r.valor_dia.toFixed(2)}</td>
+                                <td style="padding: 6px 8px; text-align: right; color: var(--color-emerald); font-weight: 600;">R$ ${r.faturamento_acumulado.toFixed(2)}</td>
                             </tr>
                         `).join("")}
                     </tbody>
@@ -648,11 +747,11 @@ function fetchAnalyticsData() {
                 const itemDiv = document.createElement("div");
                 itemDiv.className = "product-card";
                 itemDiv.style.background = "rgba(255,255,255,0.01)";
-                itemDiv.style.padding = "8px 10px";
+                itemDiv.style.padding = "10px";
                 itemDiv.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px;">
-                        <span style="font-weight: 500;">${m.name}</span>
-                        <span style="color: var(--color-cyan); font-weight: 600;">${totalGiro} vendidos <span style="font-size: 0.65rem; color: var(--text-secondary);">(estoque: ${m.qtd_atual})</span></span>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 6px;">
+                        <span style="font-weight: 600; color: var(--text-primary);">${m.name}</span>
+                        <span style="color: var(--color-cyan); font-weight: 600;">${totalGiro} vendidos <span style="font-size: 0.65rem; color: var(--text-secondary); font-weight: normal;">(estoque: ${m.qtd_atual})</span></span>
                     </div>
                     <div class="progress-container" style="height: 6px;">
                         <div class="progress-bar" style="width: ${percent}%; background: linear-gradient(90deg, var(--color-indigo), var(--color-cyan));"></div>

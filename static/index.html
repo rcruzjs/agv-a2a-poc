@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UCP Dashboard - Real-Time Inventory & Agentic Purchasing PoC</title>
+    <title>UCP Dashboard - Universal Control Plane B2B & B2C V3</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #070a13;
-            --card-bg: rgba(13, 20, 38, 0.7);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --card-border-glow: rgba(99, 102, 241, 0.15);
+            --bg-color: #030508;
+            --card-bg: rgba(9, 13, 26, 0.65);
+            --card-border: rgba(255, 255, 255, 0.06);
+            --card-border-glow: rgba(99, 102, 241, 0.2);
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
             --color-emerald: #10b981;
@@ -21,10 +21,12 @@
             --color-amber: #f59e0b;
             --color-indigo: #6366f1;
             --color-cyan: #06b6d4;
-            --glow-rose: 0 0 15px rgba(244, 63, 94, 0.4);
-            --glow-emerald: 0 0 15px rgba(16, 185, 129, 0.4);
-            --glow-amber: 0 0 15px rgba(245, 158, 11, 0.4);
-            --glow-indigo: 0 0 15px rgba(99, 102, 241, 0.4);
+            --glow-rose: 0 0 15px rgba(244, 63, 94, 0.25);
+            --glow-emerald: 0 0 15px rgba(16, 185, 129, 0.25);
+            --glow-amber: 0 0 15px rgba(245, 158, 11, 0.25);
+            --glow-indigo: 0 0 15px rgba(99, 102, 241, 0.25);
+            --glow-cyan: 0 0 15px rgba(6, 182, 212, 0.25);
+            --sidebar-width: 260px;
         }
 
         * {
@@ -39,73 +41,167 @@
             color: var(--text-primary);
             min-height: 100vh;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             overflow-x: hidden;
             background-image: 
-                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.06) 0%, transparent 45%);
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.03) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.02) 0%, transparent 45%),
+                linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;
         }
 
-        /* Header Styles */
-        header {
-            padding: 1.5rem 2rem;
-            background: rgba(7, 10, 19, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--card-border);
+        .app-layout {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
         }
 
-        .header-title-container {
+        /* Sidebar styling */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: rgba(4, 7, 13, 0.9);
+            border-right: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            flex-shrink: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar-brand {
+            padding: 1.5rem;
             display: flex;
             align-items: center;
             gap: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
         }
 
-        .logo-icon {
-            width: 40px;
-            height: 40px;
+        .brand-logo {
+            width: 36px;
+            height: 36px;
             background: linear-gradient(135deg, var(--color-indigo), var(--color-cyan));
-            border-radius: 12px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             box-shadow: var(--glow-indigo);
+            color: #fff;
+            flex-shrink: 0;
         }
 
-        h1 {
-            font-size: 1.4rem;
+        .brand-text h2 {
+            font-size: 0.95rem;
             font-weight: 700;
             letter-spacing: -0.5px;
-            background: linear-gradient(to right, #ffffff, #c084fc, #818cf8);
+            background: linear-gradient(to right, #ffffff, #c084fc);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .system-status {
-            display: flex;
-            gap: 15px;
-            font-size: 0.85rem;
+        .brand-text span {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.5px;
+            display: block;
         }
 
-        .status-badge {
+        .sidebar-nav {
+            padding: 1.25rem 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 12px 14px;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            text-align: left;
+            position: relative;
+            outline: none;
+        }
+
+        .nav-item:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.02);
+            border-color: rgba(255, 255, 255, 0.04);
+        }
+
+        .nav-item.active-tab {
+            color: #c084fc !important;
+            background: rgba(99, 102, 241, 0.08) !important;
+            border-color: rgba(99, 102, 241, 0.2) !important;
+            box-shadow: inset 0 0 8px rgba(99, 102, 241, 0.1);
+        }
+
+        .nav-item.active-tab::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 25%;
+            height: 50%;
+            width: 3px;
+            background: var(--color-cyan);
+            border-radius: 0 4px 4px 0;
+            box-shadow: var(--glow-cyan);
+        }
+
+        .nav-icon {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            font-size: 0.7rem;
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--color-rose);
+            color: #fff;
+            padding: 1px 6px;
+            border-radius: 10px;
+            font-weight: 700;
+            box-shadow: var(--glow-rose);
+        }
+
+        .sidebar-footer {
+            padding: 1.25rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .status-indicator {
             display: flex;
             align-items: center;
             gap: 8px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--card-border);
-            padding: 6px 12px;
-            border-radius: 30px;
             color: var(--text-secondary);
+            font-weight: 500;
         }
 
         .status-dot {
-            width: 8px;
-            height: 8px;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
             background-color: var(--color-emerald);
             box-shadow: var(--glow-emerald);
@@ -115,132 +211,182 @@
             animation: pulse-glow 1.5s infinite alternate;
         }
 
-        /* Container & Layout */
-        .container {
-            flex: 1;
-            padding: 2rem;
-            max-width: 1400px;
-            width: 100%;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
+        .port-info {
+            color: rgba(255, 255, 255, 0.25);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            letter-spacing: 0.2px;
         }
 
-        @media (max-width: 968px) {
-            .container {
-                grid-template-columns: 1fr;
+        /* Main Content wrapper */
+        .main-content {
+            flex: 1;
+            height: 100vh;
+            overflow-y: auto;
+            background: transparent;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        /* Page View Base */
+        .page-view {
+            display: none;
+            width: 100%;
+            height: 100%;
+            animation: fade-in-view 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .page-view.active-content {
+            display: flex !important;
+            flex-direction: column;
+        }
+
+        @keyframes fade-in-view {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
 
-        /* Glass Cards */
+        /* Page 1: Cockpit Layout */
+        .cockpit-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 1fr 1fr;
+            gap: 1.5rem;
+            height: calc(100vh - 3rem);
+            overflow: hidden;
+        }
+
+        @media (max-width: 1200px) {
+            .cockpit-grid {
+                grid-template-columns: 1fr;
+                height: auto;
+                overflow-y: auto;
+            }
+            .cockpit-grid .panel {
+                height: 450px !important;
+            }
+        }
+
+        /* Modern Panel Card */
         .panel {
             background: var(--card-bg);
             backdrop-filter: blur(16px);
             border: 1px solid var(--card-border);
-            border-radius: 20px;
-            padding: 1.8rem;
+            border-radius: 16px;
+            padding: 1.25rem;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             transition: all 0.3s ease;
+            height: 100%;
+            overflow: hidden;
+            position: relative;
         }
 
         .panel:hover {
             border-color: var(--card-border-glow);
-            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.05);
+            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.04);
         }
 
         .panel-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.2rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            padding-bottom: 0.8rem;
+            padding-bottom: 0.75rem;
+            flex-shrink: 0;
         }
 
         .panel-title {
-            font-size: 1.15rem;
+            font-size: 1rem;
             font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            letter-spacing: -0.2px;
         }
 
         .panel-title svg {
             color: var(--color-indigo);
+            width: 18px;
+            height: 18px;
+        }
+
+        .panel-title.security-title svg {
+            color: var(--color-amber);
         }
 
         /* Products Grid & Bars */
         .products-list {
             display: flex;
             flex-direction: column;
-            gap: 1.2rem;
+            gap: 1rem;
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 4px;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.01);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.15);
         }
 
         .product-card {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(255, 255, 255, 0.04);
-            border-radius: 14px;
-            padding: 1rem 1.2rem;
+            border-radius: 12px;
+            padding: 0.9rem 1.1rem;
             transition: all 0.2s ease;
         }
 
         .product-card:hover {
             background: rgba(255, 255, 255, 0.04);
-            transform: translateX(4px);
-        }
-
-        .product-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.6rem;
-        }
-
-        .product-name {
-            font-weight: 500;
-            font-size: 0.95rem;
-        }
-
-        .product-sku {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            background: rgba(99, 102, 241, 0.15);
-            color: #a5b4fc;
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-
-        .product-qty-info {
-            font-size: 0.85rem;
-            font-weight: 500;
+            border-color: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
         }
 
         .progress-container {
             width: 100%;
-            height: 10px;
+            height: 8px;
             background: rgba(255, 255, 255, 0.05);
             border-radius: 10px;
             overflow: hidden;
             position: relative;
+            margin-top: 4px;
         }
 
         .progress-bar {
             height: 100%;
             border-radius: 10px;
-            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.4s ease;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .status-ok {
             background: linear-gradient(90deg, #10b981, #059669);
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
         }
 
         .status-breach {
             background: linear-gradient(90deg, #ef4444, #b91c1c);
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
             animation: pulse-bar 1.5s infinite alternate;
         }
 
@@ -250,7 +396,7 @@
             bottom: 0;
             width: 2px;
             background-color: var(--text-primary);
-            opacity: 0.4;
+            opacity: 0.5;
             z-index: 10;
         }
 
@@ -262,6 +408,9 @@
             align-items: center;
             flex: 1;
             min-height: 250px;
+            overflow-y: auto;
+            padding-right: 4px;
+            width: 100%;
         }
 
         .a2ui-placeholder {
@@ -271,21 +420,22 @@
             flex-direction: column;
             align-items: center;
             gap: 15px;
+            padding: 1.5rem;
         }
 
         .a2ui-placeholder svg {
-            width: 64px;
-            height: 64px;
-            color: rgba(255, 255, 255, 0.05);
+            width: 52px;
+            height: 52px;
+            color: rgba(255, 255, 255, 0.03);
             stroke-width: 1.5;
         }
 
         .action-card {
             width: 100%;
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.06) 0%, rgba(13, 20, 38, 0.8) 100%);
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(9, 13, 26, 0.85) 100%);
             border: 2px solid var(--color-amber);
-            border-radius: 16px;
-            padding: 1.5rem;
+            border-radius: 14px;
+            padding: 1.25rem;
             box-shadow: var(--glow-amber);
             animation: pulse-card-glow 2s infinite alternate;
             position: relative;
@@ -299,22 +449,22 @@
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(to right, var(--color-amber), #f59e0b, #3b82f6);
+            background: linear-gradient(to right, var(--color-amber), #3b82f6);
         }
 
         .action-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 1.2rem;
+            margin-bottom: 1rem;
         }
 
         .action-badge {
             background: var(--color-amber);
-            color: #000;
-            font-size: 0.75rem;
+            color: #030508;
+            font-size: 0.7rem;
             font-weight: 700;
-            padding: 3px 8px;
+            padding: 2px 6px;
             border-radius: 4px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -322,68 +472,74 @@
 
         .action-order-id {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--text-secondary);
         }
 
         .action-body {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
         }
 
         .action-title {
-            font-size: 1.2rem;
+            font-size: 1.05rem;
             font-weight: 700;
-            margin-bottom: 0.4rem;
+            margin-bottom: 0.3rem;
+            letter-spacing: -0.2px;
         }
 
         .action-subtitle {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
-            margin-bottom: 1rem;
+            margin-bottom: 0.8rem;
+            line-height: 1.4;
         }
 
         .action-details {
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 10px;
-            padding: 1rem;
+            padding: 0.8rem;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            font-size: 0.85rem;
+            grid-template-columns: 56px 1fr 1fr;
+            gap: 10px;
+            font-size: 0.8rem;
         }
 
         .detail-item {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 2px;
         }
 
         .detail-label {
             color: var(--text-secondary);
-            font-size: 0.75rem;
+            font-size: 0.7rem;
         }
 
         .detail-value {
             font-weight: 600;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .detail-value.highlight {
             color: var(--color-amber);
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
 
         .action-footer {
             display: flex;
-            gap: 12px;
+            gap: 10px;
         }
 
         .action-btn {
             flex: 1;
-            padding: 10px 16px;
-            border-radius: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
             font-family: 'Outfit', sans-serif;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -392,15 +548,15 @@
 
         .btn-approve {
             background: var(--color-emerald);
-            color: #070a13;
+            color: #030508;
             border: none;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.15);
         }
 
         .btn-approve:hover {
             background: #34d399;
-            box-shadow: 0 4px 18px rgba(16, 185, 129, 0.4);
-            transform: translateY(-2px);
+            box-shadow: var(--glow-emerald);
+            transform: translateY(-1px);
         }
 
         .btn-reject {
@@ -410,24 +566,20 @@
         }
 
         .btn-reject:hover {
-            background: rgba(244, 63, 94, 0.05);
-            box-shadow: 0 4px 12px rgba(244, 63, 94, 0.2);
-            transform: translateY(-2px);
-        }
-
-        .action-btn:active {
-            transform: translateY(0);
+            background: rgba(244, 63, 94, 0.03);
+            box-shadow: var(--glow-rose);
+            transform: translateY(-1px);
         }
 
         /* Console Logs */
         .console-logs {
-            background: #04060b;
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 1rem;
+            background: #020305;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            padding: 0.9rem;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            height: 250px;
+            font-size: 0.7rem;
+            flex: 1;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -437,360 +589,981 @@
 
         .console-line {
             line-height: 1.4;
-            color: #c8d3f5;
+            color: #cbd5e1;
             white-space: pre-wrap;
             animation: fade-in-log 0.2s ease-out;
         }
 
+        /* Page 2: Fila Pix (Ledger Layout) */
+        .full-page-panel {
+            height: calc(100vh - 3rem);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .page-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .header-text-block {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .panel-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .export-batch-btn {
+            background: var(--color-amber);
+            color: #030508;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            box-shadow: var(--glow-amber);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .export-batch-btn:hover {
+            background: #fbbf24;
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+        }
+
+        .finance-summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .summary-card {
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .summary-card.gold-border {
+            border-left: 3px solid var(--color-amber);
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.02), transparent);
+        }
+
+        .summary-card.cyan-border {
+            border-left: 3px solid var(--color-cyan);
+            background: linear-gradient(90deg, rgba(6, 182, 212, 0.02), transparent);
+        }
+
+        .card-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-large-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .summary-card.gold-border .card-large-value {
+            color: var(--color-amber);
+        }
+
+        .summary-card.cyan-border .card-large-value {
+            color: var(--color-cyan);
+        }
+
+        .ledger-container {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .ledger-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.85rem;
+        }
+
+        .ledger-table th {
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--text-primary);
+            font-weight: 600;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+        }
+
+        .ledger-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            color: var(--text-secondary);
+        }
+
+        .ledger-table tbody tr {
+            transition: all 0.15s ease;
+        }
+
+        .ledger-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.015);
+            color: var(--text-primary);
+        }
+
+        /* Page 3: Loja (Bento Grid + Drawer) */
+        .shop-layout {
+            display: flex;
+            height: calc(100vh - 3rem);
+            overflow: hidden;
+            position: relative;
+            width: 100%;
+        }
+
+        .shop-main-panel {
+            flex: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding-right: 0.5rem;
+        }
+
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.25rem;
+            overflow-y: auto;
+            flex: 1;
+            padding: 0.25rem;
+        }
+
+        .bento-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bento-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .bento-card:hover::before {
+            transform: translateX(100%);
+        }
+
+        .bento-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--card-border-glow);
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.05);
+        }
+
+        .bento-img {
+            width: 100%;
+            height: 120px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 12px;
+            transition: transform 0.3s ease;
+        }
+
+        .bento-card:hover .bento-img {
+            transform: scale(1.03);
+        }
+
+        /* Checkout Drawer */
+        .checkout-drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 440px;
+            background: rgba(4, 7, 13, 0.95);
+            border-left: 1px solid var(--card-border);
+            box-shadow: -10px 0 40px rgba(0, 0, 0, 0.7);
+            z-index: 200;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(20px);
+        }
+
+        .checkout-drawer.open {
+            transform: translateX(0);
+        }
+
+        .drawer-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .drawer-header h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #a5b4fc;
+        }
+
+        .close-drawer-btn {
+            background: transparent;
+            border: none;
+            color: var(--color-rose);
+            font-size: 1.75rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 4px;
+            transition: transform 0.2s ease;
+        }
+
+        .close-drawer-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .drawer-body {
+            padding: 1.5rem;
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .drawer-item-summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 10px 12px;
+            border-radius: 10px;
+        }
+
+        .checkout-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .form-group label {
+            color: var(--text-secondary);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 9px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.85rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--color-indigo);
+            box-shadow: 0 0 8px rgba(99, 102, 241, 0.2);
+        }
+
+        .cep-input-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .cep-input-group input {
+            flex: 1;
+        }
+
+        .calc-btn {
+            padding: 0 14px;
+            background: var(--color-indigo);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .calc-btn:hover {
+            background: #5b5ff7;
+        }
+
+        .card-fields {
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px dashed rgba(255, 255, 255, 0.08);
+            padding: 12px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            animation: slide-down 0.25s ease;
+        }
+
+        @keyframes slide-down {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .summary-pricing-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 14px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .price-row.text-cyan {
+            color: var(--color-cyan);
+        }
+
+        .price-row.total-price-row {
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding-top: 8px;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .price-row.total-price-row.text-emerald {
+            color: var(--color-emerald);
+        }
+
+        .logistics-info {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            text-align: center;
+        }
+
+        .checkout-submit-btn {
+            width: 100%;
+            padding: 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            border-radius: 8px;
+            margin-top: 8px;
+            background: linear-gradient(90deg, var(--color-indigo), var(--color-cyan));
+            border: none;
+            color: #030508;
+            box-shadow: var(--glow-indigo);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .checkout-submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.35);
+        }
+
+        /* Payment Simulation Modal */
+        .payment-modal {
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 400px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.04) 0%, rgba(4, 7, 13, 0.98) 100%);
+            border: 2px solid var(--color-emerald);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            z-index: 300;
+            box-shadow: var(--glow-emerald);
+            animation: bounce-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes bounce-in {
+            from { opacity: 0; transform: translate(-50%, -20px) scale(0.95); }
+            to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+        }
+
+        .gateway-area {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 14px;
+            border-radius: 10px;
+            margin: 12px 0;
+        }
+
+        .gateway-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .gateway-btn-confirm {
+            flex: 1.5;
+            padding: 8px;
+            font-size: 0.8rem;
+            background: var(--color-emerald);
+            color: #030508;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .gateway-btn-cancel {
+            flex: 1;
+            padding: 8px;
+            font-size: 0.8rem;
+            background: transparent;
+            color: var(--color-rose);
+            border: 1px solid var(--color-rose);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* Page 4: KPIs (Analytics Grid) */
+        .kpi-dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.25rem;
+            overflow-y: auto;
+            height: calc(100vh - 3rem);
+            padding-right: 4px;
+            width: 100%;
+        }
+
+        .kpi-card {
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .kpi-card.border-emerald { border-top: 3px solid var(--color-emerald); }
+        .kpi-card.border-cyan { border-top: 3px solid var(--color-cyan); }
+        .kpi-card.border-amber { border-top: 3px solid var(--color-amber); }
+        .kpi-card.border-indigo { border-top: 3px solid var(--color-indigo); }
+
+        .kpi-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+
+        .kpi-value.text-emerald { color: var(--color-emerald); }
+        .kpi-value.text-cyan { color: var(--color-cyan); }
+        .kpi-value.text-amber { color: var(--color-amber); }
+        .kpi-value.text-indigo { color: #a5b4fc; }
+
+        .kpi-block {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 6px 25px rgba(0,0,0,0.3);
+        }
+
+        .grid-span-2 { grid-column: span 2; }
+        .grid-span-4 { grid-column: span 4; }
+
+        @media (max-width: 1000px) {
+            .kpi-dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .grid-span-2, .grid-span-4 {
+                grid-column: span 2;
+            }
+        }
+
+        .block-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        /* SVG Chart container */
+        .chart-container {
+            width: 100%;
+            height: 180px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .kpi-table-container {
+            overflow-y: auto;
+            max-height: 180px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.15);
+        }
+
+        .kpi-inventory-turnover-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
         /* Animations */
         @keyframes pulse-glow {
-            0% {
-                box-shadow: 0 0 5px var(--color-emerald);
-            }
-            100% {
-                box-shadow: 0 0 15px var(--color-emerald);
-            }
+            0% { box-shadow: 0 0 5px var(--color-emerald); }
+            100% { box-shadow: 0 0 15px var(--color-emerald); }
         }
 
         @keyframes pulse-bar {
-            0% {
-                opacity: 0.95;
-            }
-            100% {
-                opacity: 0.7;
-            }
+            0% { opacity: 0.95; }
+            100% { opacity: 0.75; }
         }
 
         @keyframes pulse-card-glow {
-            0% {
-                box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
-                border-color: rgba(245, 158, 11, 0.6);
-            }
-            100% {
-                box-shadow: 0 0 25px rgba(245, 158, 11, 0.5);
-                border-color: rgba(245, 158, 11, 1);
-            }
+            0% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); }
+            100% { box-shadow: 0 0 25px rgba(245, 158, 11, 0.4); border-color: rgba(245, 158, 11, 0.85); }
         }
 
         @keyframes fade-in-log {
-            from {
-                opacity: 0;
-                transform: translateY(5px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-        }
-        
-        /* Estilos de Abas Dinâmicas */
-        .tab-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            font-family: inherit;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            padding: 6px 12px;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-        }
-        .tab-btn:hover {
-            color: var(--text-primary);
-            background: rgba(255, 255, 255, 0.02);
-        }
-        .tab-btn.active-tab {
-            color: var(--color-indigo) !important;
-            background: rgba(99, 102, 241, 0.1) !important;
-            box-shadow: inset 0 0 5px rgba(99, 102, 241, 0.15);
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active-content {
-            display: flex !important;
-            flex-direction: column;
-            gap: 1.2rem;
-            animation: fade-in-log 0.3s ease-out;
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="header-title-container">
-            <div class="logo-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
-                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
-                    <line x1="6" y1="6" x2="6.01" y2="6"/>
-                    <line x1="6" y1="18" x2="6.01" y2="18"/>
-                </svg>
+    <div class="app-layout">
+        <!-- Left Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-logo">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                        <line x1="6" y1="6" x2="6.01" y2="6"/>
+                        <line x1="6" y1="18" x2="6.01" y2="18"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h2>UCP Core Engine</h2>
+                    <span>V3 MULTITASK MESH</span>
+                </div>
             </div>
-            <h1>UCP Dashboard</h1>
-        </div>
+            
+            <nav class="sidebar-nav">
+                <button id="tab-stock" class="nav-item active-tab" onclick="switchTab('stock')">
+                    <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                        <line x1="8" y1="21" x2="16" y2="21"/>
+                        <line x1="12" y1="17" x2="12" y2="21"/>
+                    </svg>
+                    Cockpit Operações
+                </button>
+                <button id="tab-pix" class="nav-item" onclick="switchTab('pix')">
+                    <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="5" width="20" height="14" rx="2" ry="2"/>
+                        <line x1="2" y1="10" x2="22" y2="10"/>
+                    </svg>
+                    Fila de Lote Pix
+                    <span class="nav-badge" id="pix-count-badge">0</span>
+                </button>
+                <button id="tab-shop" class="nav-item" onclick="switchTab('shop')">
+                    <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="9" cy="21" r="1"/>
+                        <circle cx="20" cy="21" r="1"/>
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                    </svg>
+                    Loja E-commerce
+                </button>
+                <button id="tab-kpi" class="nav-item" onclick="switchTab('kpi')">
+                    <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    KPI Analítico
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <div class="status-dot pulse"></div>
+                    <span id="server-status">SSE Connected</span>
+                </div>
+                <div class="port-info">gRPC: 50051 | UCP: 8000</div>
+            </div>
+        </aside>
         
-        <div class="system-status">
-            <div class="status-badge">
-                <div class="status-dot pulse"></div>
-                <span id="server-status">SSE Connected</span>
-            </div>
-            <div class="status-badge">
-                <span>gRPC: 50051</span>
-            </div>
-            <div class="status-badge">
-                <span>MCP Server: FastMCP</span>
-            </div>
-        </div>
-    </header>
-
-    <main class="container">
-        <!-- Panel Left: Monitor de Estoque & Lote Pix -->
-        <section class="panel">
-            <div class="panel-header" style="flex-direction: column; align-items: flex-start; gap: 10px;">
-                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-                    <h2 class="panel-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-                            <line x1="12" y1="22.08" x2="12" y2="12"/>
-                        </svg>
-                        Painel de Operações UCP
-                    </h2>
-                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Streaming de Ativos</span>
-                </div>
-                
-                <!-- Botões das Abas -->
-                <div style="display: flex; gap: 8px; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; margin-top: 4px; overflow-x: auto; white-space: nowrap; scrollbar-width: none;">
-                    <button id="tab-stock" class="tab-btn active-tab" onclick="switchTab('stock')">📦 Estoque</button>
-                    <button id="tab-pix" class="tab-btn" onclick="switchTab('pix')">💳 Fila Pix (<span id="pix-count-badge">0</span>)</button>
-                    <button id="tab-shop" class="tab-btn" onclick="switchTab('shop')">🛒 Loja Checkout</button>
-                    <button id="tab-kpi" class="tab-btn" onclick="switchTab('kpi')">📈 KPI Analítico</button>
-                </div>
-            </div>
-
-            <!-- Conteúdo da Aba 1: Estoque Ativo -->
-            <div id="stock-content" class="tab-content active-content products-list">
-                <div class="products-list" id="products-container">
-                    <div style="text-align: center; color: var(--text-secondary); padding: 2rem;">Carregando status do estoque...</div>
-                </div>
-            </div>
-
-            <!-- Conteúdo da Aba 2: Fila de Pix Aguardando -->
-            <div id="pix-content" class="tab-content" style="display: none;">
-                <!-- Header com Botão de Exportação -->
-                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245,158,11,0.15); padding: 12px 16px; border-radius: 12px; margin-bottom: 15px;">
-                    <div>
-                        <p style="font-size: 0.85rem; font-weight: 600; color: var(--color-amber);">Pagamentos Autorizados</p>
-                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">Pedidos prontos para remessa Pix bancária.</p>
-                    </div>
-                    <button class="action-btn btn-approve" id="btn-export-batch" style="padding: 8px 14px; font-size: 0.8rem; background: var(--color-amber); color: #000; box-shadow: var(--glow-amber); cursor: pointer; border-radius: 8px; font-weight: 600; border: none;" onclick="exportPixBatchToServer()">🚀 Exportar Lote</button>
-                </div>
-                
-                <div id="pix-list-container" style="display: flex; flex-direction: column; gap: 12px; max-height: 450px; overflow-y: auto; padding-right: 4px;">
-                    <!-- Preenchido dinamicamente via JS -->
-                    <div style="text-align: center; color: var(--text-secondary); padding: 2rem;">Nenhum Pix pendente de envio.</div>
-                </div>
-            </div>
-
-            <!-- Conteúdo da Aba 3: Loja E-commerce (Checkout V2) -->
-            <div id="shop-content" class="tab-content" style="display: none; flex-direction: column; gap: 1.2rem;">
-                <div id="shop-catalog" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; width: 100%;">
-                    <!-- Preenchido dinamicamente com cards de compra -->
-                </div>
-                
-                <!-- Área Dinâmica de Checkout -->
-                <div id="checkout-form-container" style="display: none; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 1.2rem; margin-top: 10px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">
-                        <h3 style="font-size: 1rem; font-weight: 600; color: #a5b4fc;">Finalizar Compra (Checkout)</h3>
-                        <button onclick="cancelCheckout()" style="background: transparent; border: none; color: var(--color-rose); cursor: pointer; font-size: 0.8rem;">Cancelar</button>
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- PAGE 1: COCKPIT DE OPERAÇÕES -->
+            <div id="stock-content" class="page-view active-content">
+                <div class="cockpit-grid">
+                    
+                    <!-- Coluna 1: Monitor de Estoque -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2 class="panel-title">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                                    <line x1="12" y1="22.08" x2="12" y2="12"/>
+                                </svg>
+                                Monitor de Estoque B2B
+                            </h2>
+                        </div>
+                        <div class="products-list" id="products-container">
+                            <div style="text-align: center; color: var(--text-secondary); padding: 2rem;">Carregando status do estoque...</div>
+                        </div>
                     </div>
                     
-                    <div id="checkout-item-summary" style="display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.15); padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 0.85rem;">
-                        <!-- Sumário do item selecionado -->
+                    <!-- Coluna 2: A2UI Security Action Card -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2 class="panel-title security-title">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                </svg>
+                                A2UI - Ação Humana (HITL)
+                            </h2>
+                        </div>
+                        <div class="a2ui-container" id="a2ui-root">
+                            <div class="a2ui-placeholder">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="m9 12 2 2 4-4"/>
+                                </svg>
+                                <p style="font-weight: 500;">Sistema de Segurança Ativo</p>
+                                <p style="font-size: 0.85rem; color: var(--text-secondary);">Aguardando rupturas de estoque B2B para processar autorizações.</p>
+                            </div>
+                        </div>
                     </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr; gap: 10px; font-size: 0.85rem;">
-                        <div>
-                            <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">Nome Completo</label>
-                            <input type="text" id="chk-name" value="Ricardo Cruz" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none;"/>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px;">
-                            <div>
-                                <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">CPF do Comprador</label>
-                                <input type="text" id="chk-cpf" value="123.456.789-00" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none;"/>
-                            </div>
-                            <div>
-                                <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">Forma de Pagamento</label>
-                                <select id="chk-payment" onchange="toggleCardInputs()" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none;">
-                                    <option value="PIX">Pix (Expiração Curta)</option>
-                                    <option value="CREDIT_CARD">Cartão de Crédito</option>
-                                    <option value="BOLETO">Boleto Bancário</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div>
-                                <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">CEP de Destino</label>
-                                <div style="display: flex; gap: 5px;">
-                                    <input type="text" id="chk-cep" value="01310-100" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none;"/>
-                                    <button onclick="calculateShippingPrice()" style="padding: 0 10px; background: var(--color-indigo); border: none; border-radius: 6px; color: #fff; font-size: 0.75rem; cursor: pointer; font-weight: 500;">Calcular</button>
-                                </div>
-                            </div>
-                            <div>
-                                <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">Quantidade</label>
-                                <input type="number" id="chk-qty" value="1" min="1" onchange="calculateShippingPrice()" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none;"/>
-                            </div>
-                        </div>
-                        <div>
-                            <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">Logradouro de Entrega</label>
-                            <input type="text" id="chk-address" readonly placeholder="Preenchido via CEP" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); color: var(--text-secondary); outline: none;"/>
-                        </div>
-                        
-                        <!-- Campos do Cartão de Crédito -->
-                        <div id="card-fields-container" style="display: none; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin-top: 5px;">
-                            <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">Número do Cartão de Crédito</label>
-                            <input type="text" id="chk-card-num" value="4532 9012 3456 7890" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none; margin-bottom: 8px;"/>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                                <div>
-                                    <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">Validade (MM/AA)</label>
-                                    <input type="text" id="chk-card-val" value="12/30" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none;"/>
-                                </div>
-                                <div>
-                                    <label style="display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 0.75rem;">CVV</label>
-                                    <input type="text" id="chk-card-cvv" value="123" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; outline: none;"/>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Resumo Financeiro -->
-                        <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="color: var(--text-secondary);">Valor dos Produtos:</span>
-                                <span style="font-weight: 500;" id="summary-prod-val">R$ 0,00</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="color: var(--text-secondary);">Custo de Frete (Dinâmico):</span>
-                                <span style="font-weight: 500; color: var(--color-cyan);" id="summary-shipping-val">R$ 0,00</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; font-weight: 600;">
-                                <span>Valor Total do Pedido:</span>
-                                <span style="color: var(--color-emerald);" id="summary-total-val">R$ 0,00</span>
-                            </div>
-                            <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px;" id="summary-logistics-info"></div>
-                        </div>
-
-                        <button onclick="submitCheckoutOrder()" class="action-btn btn-approve" style="width: 100%; padding: 12px; font-size: 0.95rem; font-weight: 600; margin-top: 8px; background: linear-gradient(90deg, var(--color-indigo), var(--color-cyan)); border: none; color: #070a13; box-shadow: var(--glow-indigo);">🔒 Confirmar e Fechar Pedido</button>
-                    </div>
-                </div>
-                
-                <!-- Modal Interativo do Gateway de Pagamento -->
-                <div id="payment-gateway-modal" style="display: none; background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(13, 20, 38, 0.9) 100%); border: 2px solid var(--color-emerald); border-radius: 16px; padding: 1.5rem; text-align: center; margin-top: 10px; box-shadow: var(--glow-emerald);">
-                    <h3 id="gateway-title" style="color: var(--color-emerald); font-size: 1.1rem; font-weight: 700; margin-bottom: 8px;">💳 Gateway de Pagamento Multifase</h3>
-                    <p id="gateway-subtitle" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;"></p>
                     
-                    <!-- Área Dinâmica do Tipo de Pagamento -->
-                    <div id="gateway-dynamic-area" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                        <!-- QR Code, Dados de Boleto, ou Processamento -->
+                    <!-- Coluna 3: Console Activity Logs -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2 class="panel-title">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="4 17 10 11 4 5"/>
+                                    <line x1="12" y1="19" x2="20" y2="19"/>
+                                </svg>
+                                Console de Atividade (A2A & MCP)
+                            </h2>
+                        </div>
+                        <div class="console-logs" id="console-root">
+                            <div class="console-line" style="color: var(--text-secondary);">[Console] Inicializando malha de agentes agênticos...</div>
+                        </div>
                     </div>
-
-                    <div style="display: flex; gap: 10px;">
-                        <button onclick="cancelPayment()" class="action-btn btn-reject" style="flex: 1; padding: 8px; font-size: 0.8rem;">Cancelar</button>
-                        <button id="gateway-confirm-btn" onclick="executeGatewayPayment()" class="action-btn btn-approve" style="flex: 1.5; padding: 8px; font-size: 0.8rem;">Simular Confirmação de Pagamento</button>
+                    
+                </div>
+            </div>
+            
+            <!-- PAGE 2: FILA PIX (LEDGER FINANCEIRO) -->
+            <div id="pix-content" class="page-view" style="display: none;">
+                <div class="panel full-page-panel">
+                    <div class="panel-header page-header-flex">
+                        <div class="header-text-block">
+                            <h2 class="panel-title">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="2" y="5" width="20" height="14" rx="2" ry="2"/>
+                                    <line x1="2" y1="10" x2="22" y2="10"/>
+                                </svg>
+                                Fila de Lotes Pix Autorizados
+                            </h2>
+                            <p class="panel-subtitle">Painel financeiro corporativo. Visualize pagamentos pendentes e realize remessas em lote.</p>
+                        </div>
+                        <button class="export-batch-btn" id="btn-export-batch" onclick="exportPixBatchToServer()">
+                            🚀 Exportar Lote
+                        </button>
+                    </div>
+                    
+                    <div class="finance-summary-grid">
+                        <div class="summary-card gold-border">
+                            <span class="card-label">Autorizações em Fila</span>
+                            <div class="card-large-value" id="summary-pix-count">0</div>
+                        </div>
+                        <div class="summary-card cyan-border">
+                            <span class="card-label">Estimativa Financeira do Lote</span>
+                            <div class="card-large-value" id="summary-pix-amount">R$ 0,00</div>
+                        </div>
+                    </div>
+                    
+                    <div class="ledger-container">
+                        <table class="ledger-table">
+                            <thead>
+                                <tr>
+                                    <th>ID Transação</th>
+                                    <th>Fornecedor</th>
+                                    <th>Chave Pix Destinatário</th>
+                                    <th>Item / SKU</th>
+                                    <th>Qtd</th>
+                                    <th>Valor Total</th>
+                                    <th>Data Autorização</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pix-ledger-body">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 2rem;">Nenhum Pix pendente de envio.</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
-
-            <!-- Conteúdo da Aba 4: KPI Analítico (Window Functions V2) -->
-            <div id="kpi-content" class="tab-content" style="display: none; flex-direction: column; gap: 1rem;">
-                <!-- Cards de KPI -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; width: 100%;">
-                    <div style="background: rgba(16, 185, 129, 0.03); border: 1px solid rgba(16, 185, 129, 0.1); padding: 12px; border-radius: 12px; text-align: center;">
-                        <span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">Faturamento Total (Pago)</span>
-                        <span style="font-size: 1.15rem; font-weight: 700; color: var(--color-emerald); display: block; margin-top: 4px;" id="kpi-total-revenue">R$ 0,00</span>
+            
+            <!-- PAGE 3: LOJA E-COMMERCE (BENTO GRID + SLIDING DRAWER) -->
+            <div id="shop-content" class="page-view" style="display: none;">
+                <div class="shop-layout">
+                    
+                    <div class="shop-main-panel">
+                        <div class="panel-header">
+                            <h2 class="panel-title">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="9" cy="21" r="1"/>
+                                    <circle cx="20" cy="21" r="1"/>
+                                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                                </svg>
+                                Checkout B2C - Portal de Vendas de Hardware
+                            </h2>
+                        </div>
+                        <div id="shop-catalog" class="bento-grid">
+                            <!-- Bento Catalog -->
+                        </div>
                     </div>
-                    <div style="background: rgba(6, 182, 212, 0.03); border: 1px solid rgba(6, 182, 212, 0.1); padding: 12px; border-radius: 12px; text-align: center;">
-                        <span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">Ticket Médio por Venda</span>
-                        <span style="font-size: 1.15rem; font-weight: 700; color: var(--color-cyan); display: block; margin-top: 4px;" id="kpi-ticket-avg">R$ 0,00</span>
+                    
+                    <!-- Sliding Checkout Drawer -->
+                    <div id="checkout-drawer" class="checkout-drawer">
+                        <div class="drawer-header">
+                            <h3>Finalizar Compra</h3>
+                            <button onclick="cancelCheckout()" class="close-drawer-btn">&times;</button>
+                        </div>
+                        <div class="drawer-body">
+                            
+                            <div id="checkout-item-summary" class="drawer-item-summary">
+                                <!-- Item summary -->
+                            </div>
+                            
+                            <div class="checkout-form">
+                                <div class="form-group">
+                                    <label>Nome Completo do Cliente</label>
+                                    <input type="text" id="chk-name" value="Ricardo Cruz" />
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>CPF do Comprador</label>
+                                        <input type="text" id="chk-cpf" value="123.456.789-00" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Método de Pagamento</label>
+                                        <select id="chk-payment" onchange="toggleCardInputs()">
+                                            <option value="PIX">Pix (Expiração Curta)</option>
+                                            <option value="CREDIT_CARD">Cartão de Crédito</option>
+                                            <option value="BOLETO">Boleto Bancário</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>CEP de Destino</label>
+                                        <div class="cep-input-group">
+                                            <input type="text" id="chk-cep" value="01310-100" />
+                                            <button onclick="calculateShippingPrice()" class="calc-btn">Calcular</button>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Quantidade</label>
+                                        <input type="number" id="chk-qty" value="1" min="1" onchange="calculateShippingPrice()" />
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Endereço de Entrega</label>
+                                    <input type="text" id="chk-address" readonly placeholder="Digite um CEP e clique em Calcular..." />
+                                </div>
+                                
+                                <!-- CC Fields -->
+                                <div id="card-fields-container" class="card-fields" style="display: none;">
+                                    <div class="form-group">
+                                        <label>Número do Cartão de Crédito</label>
+                                        <input type="text" id="chk-card-num" value="4532 9012 3456 7890" />
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Validade (MM/AA)</label>
+                                            <input type="text" id="chk-card-val" value="12/30" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>CVV</label>
+                                            <input type="text" id="chk-card-cvv" value="123" />
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="summary-pricing-card">
+                                    <div class="price-row">
+                                        <span>Valor dos Produtos:</span>
+                                        <span id="summary-prod-val">R$ 0,00</span>
+                                    </div>
+                                    <div class="price-row text-cyan">
+                                        <span>Custo de Frete (Dinâmico):</span>
+                                        <span id="summary-shipping-val">R$ 0,00</span>
+                                    </div>
+                                    <div class="price-row total-price-row text-emerald">
+                                        <span>Valor Total do Pedido:</span>
+                                        <span id="summary-total-val">R$ 0,00</span>
+                                    </div>
+                                    <div id="summary-logistics-info" class="logistics-info"></div>
+                                </div>
+                                
+                                <button onclick="submitCheckoutOrder()" class="checkout-submit-btn">
+                                    🔒 Confirmar e Fechar Pedido
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div style="background: rgba(245, 158, 11, 0.03); border: 1px solid rgba(245, 158, 11, 0.1); padding: 12px; border-radius: 12px; text-align: center;">
-                        <span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">Taxa de Conversão</span>
-                        <span style="font-size: 1.15rem; font-weight: 700; color: var(--color-amber); display: block; margin-top: 4px;" id="kpi-conversion-rate">0.00 %</span>
+                    
+                    <!-- Gateway Modal -->
+                    <div id="payment-gateway-modal" class="payment-modal" style="display: none;">
+                        <h3 id="gateway-title">💳 Gateway de Pagamento Multifase</h3>
+                        <p id="gateway-subtitle"></p>
+                        <div id="gateway-dynamic-area" class="gateway-area"></div>
+                        <div class="gateway-actions">
+                            <button onclick="cancelPayment()" class="gateway-btn-cancel">Cancelar</button>
+                            <button id="gateway-confirm-btn" onclick="executeGatewayPayment()" class="gateway-btn-confirm">Simular Confirmação</button>
+                        </div>
                     </div>
-                    <div style="background: rgba(99, 102, 241, 0.03); border: 1px solid rgba(99, 102, 241, 0.1); padding: 12px; border-radius: 12px; text-align: center;">
-                        <span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">Vendas / Checkouts</span>
-                        <span style="font-size: 1.15rem; font-weight: 700; color: #a5b4fc; display: block; margin-top: 4px;" id="kpi-total-orders">0 / 0</span>
-                    </div>
-                </div>
-
-                <!-- Gráfico/Listagem de Giro de Estoque Analítico -->
-                <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255,255,255,0.04); border-radius: 14px; padding: 15px;">
-                    <h4 style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">📊 Desempenho e Giro de Estoque</h4>
-                    <div id="kpi-inventory-list" style="display: flex; flex-direction: column; gap: 8px;">
-                        <!-- Preenchido via JS com unidades vendidas vs atuais -->
-                        <div style="text-align: center; color: var(--text-secondary); font-size: 0.8rem; padding: 1rem;">Nenhum produto vendido ainda.</div>
-                    </div>
-                </div>
-
-                <!-- Painel de Faturamento Acumulado Diário (Window Functions proof) -->
-                <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255,255,255,0.04); border-radius: 14px; padding: 15px;">
-                    <h4 style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">📈 Faturamento Diário Acumulado (SQL Window)</h4>
-                    <div id="kpi-revenue-table" style="max-height: 120px; overflow-y: auto; font-family: monospace; font-size: 0.75rem; color: var(--text-secondary); padding-right: 4px;">
-                        <!-- Preenchido via JS -->
-                        <div style="text-align: center; color: var(--text-secondary); padding: 1rem;">Sem dados de vendas acumuladas no momento.</div>
-                    </div>
+                    
                 </div>
             </div>
-        </section>
-
-        <!-- Panel Right: A2UI & Agent console -->
-        <section style="display: flex; flex-direction: column; gap: 2rem;">
-            <!-- Top Box: A2UI Action Card -->
-            <div class="panel" style="flex: 1;">
-                <div class="panel-header">
-                    <h2 class="panel-title" style="color: var(--color-amber);">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                        </svg>
-                        A2UI - Ação Humana de Segurança
-                    </h2>
-                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Human-in-the-Loop</span>
-                </div>
-
-                <div class="a2ui-container" id="a2ui-root">
-                    <div class="a2ui-placeholder">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="m9 12 2 2 4-4"/>
-                        </svg>
-                        <p style="font-weight: 500;">Status do Sistema Seguro</p>
-                        <p style="font-size: 0.85rem; color: var(--text-secondary);">Aguardando eventos de ruptura do gRPC para processar autorizações.</p>
+            
+            <!-- PAGE 4: KPI ANALÍTICO (WINDOW FUNCTIONS & GRAPHICS) -->
+            <div id="kpi-content" class="page-view" style="display: none;">
+                <div class="kpi-dashboard-grid">
+                    
+                    <!-- Cards -->
+                    <div class="kpi-card border-emerald">
+                        <span class="kpi-label">Faturamento Total (Pago)</span>
+                        <div class="kpi-value text-emerald" id="kpi-total-revenue">R$ 0,00</div>
                     </div>
+                    <div class="kpi-card border-cyan">
+                        <span class="kpi-label">Ticket Médio por Venda</span>
+                        <div class="kpi-value text-cyan" id="kpi-ticket-avg">R$ 0,00</div>
+                    </div>
+                    <div class="kpi-card border-amber">
+                        <span class="kpi-label">Taxa de Conversão</span>
+                        <div class="kpi-value text-amber" id="kpi-conversion-rate">0.00 %</div>
+                    </div>
+                    <div class="kpi-card border-indigo">
+                        <span class="kpi-label">Vendas / Checkouts</span>
+                        <div class="kpi-value text-indigo" id="kpi-total-orders">0 / 0</div>
+                    </div>
+                    
+                    <!-- SVG Chart -->
+                    <div class="kpi-block grid-span-2">
+                        <h3 class="block-title">📈 Faturamento Acumulado Diário (SQL Window Functions)</h3>
+                        <div class="chart-container" id="svg-chart-container">
+                            <!-- Dynamic SVG chart -->
+                        </div>
+                    </div>
+                    
+                    <!-- Daily Table -->
+                    <div class="kpi-block grid-span-2">
+                        <h3 class="block-title">🗓️ Histórico de Fechamento Diário</h3>
+                        <div id="kpi-revenue-table" class="kpi-table-container">
+                            <!-- SQL table renders -->
+                            <div style="text-align: center; color: var(--text-secondary); padding: 1rem;">Sem faturamento consolidado.</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Inventory Turnover -->
+                    <div class="kpi-block grid-span-4">
+                        <h3 class="block-title">🔄 Desempenho e Giro de Estoque Físico</h3>
+                        <div id="kpi-inventory-list" class="kpi-inventory-turnover-list">
+                            <!-- Turnover progress indicators -->
+                            <div style="text-align: center; color: var(--text-secondary); padding: 1rem;">Sem dados de giros no momento.</div>
+                        </div>
+                    </div>
+                    
                 </div>
             </div>
-
-            <!-- Bottom Box: Console logs -->
-            <div class="panel" style="height: 350px;">
-                <div class="panel-header">
-                    <h2 class="panel-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="4 17 10 11 4 5"/>
-                            <line x1="12" y1="19" x2="20" y2="19"/>
-                        </svg>
-                        Console de Atividade da Malha (A2A & MCP)
-                    </h2>
-                </div>
-
-                <div class="console-logs" id="console-root">
-                    <div class="console-line" style="color: var(--text-secondary);">[Console] Aguardando inicializacao dos agentes de estoque e compras...</div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <footer style="padding: 1.5rem; text-align: center; border-top: 1px solid var(--card-border); color: var(--text-secondary); font-size: 0.8rem; background: #04060b;">
-        Real-Time Agentic Mesh Poc &copy; 2026. Desenvolvido por Malha de Agentes Google.
-    </footer>
+            
+        </main>
+    </div>
 
     <script src="/static/app.js"></script>
 </body>
