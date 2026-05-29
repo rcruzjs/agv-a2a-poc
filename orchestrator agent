@@ -1,0 +1,45 @@
+# MISSION BRIEFING: REAL-TIME INVENTORY & AGENTIC PURCHASING POC
+
+Atue como uma Malha de Agentes Engenheiros do Google operando em paralelo no sandbox Linux do Antigravity. Seu objetivo é construir e rodar uma Prova de Conceito (PoC) para controle de itens demandados, verificação de estoque em tempo real, análise comparativa de fornecedores e autorização de pagamentos, utilizando uma arquitetura distribuída e orientada a eventos.
+
+## 🛠️ ARQUITETURA E PROTOCOLOS MANDATÓRIOS
+
+1. AP2 (Application Protocol v2): Camada de transporte de alta performance. Implemente usando gRPC em Go (ou Python assíncrono com gRPC) para streaming de eventos de demanda em tempo real.
+2. MCP (Model Context Protocol): Servidor de contexto em Python que expõe ferramentas (Tools) para que os LLMs internos consultem o banco de dados de estoque e executem cotações.
+3. A2A (Agent-to-Agent): Fluxo assíncrono onde um 'Agente de Estoque' (reativo) detecta uma ruptura e aciona um 'Agente de Compras' via requisições HTTP/gRPC internas.
+4. UCP (Universal Control Plane): Orquestrador central que gerencia o estado consolidado da aplicação e as chaves de API com segurança.
+5. A2UI & AG-UI (Agent Interfaces): Painel em tempo real (AG-UI) via WebSockets/SSE e componentes de interface adaptativos (A2UI) que geram dinamicamente cards de ação humana (ex: aprovação de pagamento).
+
+---
+
+## 📅 PLANO DE EXECUÇÃO PARALELA (TASK ALLOCATION)
+
+Dividam-se nas seguintes frentes de trabalho simultâneas na Workspace:
+
+### [Agente_Terminal_1] - Ambiente e Infraestrutura (UCP)
+- Configure o sandbox instalando as dependências necessárias: Go, Python 3.11+, SDK do MCP (mcp[cli]) e ferramentas de build.
+- Crie um banco de dados leve simulado (SQLite ou AlloyDB local) com tabelas de: produtos (SKU, nome, qtd_atual, qtd_minima), fornecedores (nome, item_id, preco, prazo) e pagamentos.
+
+### [Agente_Editor_2] - Contrato e Ingestão (AP2 & A2A)
+- Escreva o contrato .proto definindo a RPC de verificação de demanda e o Stream de análise de preços.
+- Implemente o serviço de Ingestão que recebe as demandas de itens em tempo real e dispara o trigger A2A de compra se qtd_atual < qtd_minima.
+
+### [Agente_Editor_3] - Camada de Inteligência (MCP Server)
+- Crie o arquivo server_mcp.py usando o SDK do FastMCP.
+- Exponha as ferramentas @mcp.tool() para:
+  - verificar_status_estoque(sku: str)
+  - comparar_precos_fornecedores(sku: str)
+  - agendar_pagamento_compras(pedido_id: str, valor: float, favorecido: str)
+
+### [Agente_Web_4] - Frontend Adaptativo (AG-UI / A2UI)
+- Construa uma interface web leve (pode ser usando Tailwind/HTML injetado ou uma aplicação SPA simples).
+- Garanta que ela escute os eventos do backend em tempo real para plotar a variação de estoque.
+- Se o Agente de Compras decidir por uma transação, a interface deve renderizar dinamicamente um card gerado pelo payload da IA pedindo aprovação ("Aprovar pagamento de R$ X para o fornecedor Y?").
+
+---
+
+## 🚀 CRITÉRIOS DE SUCESSO (DEFINITION OF DONE)
+
+1. Crie um script de teste de carga (stress_test.py) que dispare demandas contínuas de itens para forçar rupturas de estoque artificiais no sistema.
+2. Demonstre o fluxo ponta a ponta funcionando: Demanda -> Quebra de Estoque -> Disparo A2A -> Consulta MCP de Preços -> Geração do Artefato Visual no browser embutido do Antigravity.
+3. Não pare a execução até que todos os servidores (gRPC, MCP e Web) estejam rodando em background e os endpoints estejam respondendo com sucesso (200 OK / gRPC Status OK).

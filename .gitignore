@@ -1,0 +1,24 @@
+# Ambientes Virtuais
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache e temporários
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Banco de dados local (gerado dinamicamente)
+*.db
+*.sqlite3
+
+# Lotes Pix exportados
+exports/
+
+# IDEs e configurações locais
+.vscode/
+.idea/
+*.swp
+*.swo
