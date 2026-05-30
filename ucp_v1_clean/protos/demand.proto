@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package demand;
+
+service DemandService {
+  rpc ReportDemand (DemandRequest) returns (DemandResponse);
+  rpc StreamDemands (stream DemandRequest) returns (stream DemandResponse);
+}
+
+message DemandRequest {
+  string sku = 1;
+  int32 quantity_consumed = 2;
+}
+
+message DemandResponse {
+  string sku = 1;
+  int32 current_quantity = 2;
+  bool breach_detected = 3;
+  string message = 4;
+}
