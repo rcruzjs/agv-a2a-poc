@@ -91,6 +91,24 @@ def init_db():
     )
     """)
 
+    # Create Pix Batches Table (V4 Control)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS pix_batches (
+        batch_id TEXT PRIMARY KEY,
+        timestamp TEXT NOT NULL,
+        total_transactions INTEGER NOT NULL,
+        total_amount REAL NOT NULL,
+        sent_to_bank INTEGER DEFAULT 0, -- 0 = Pendente, 1 = Enviado
+        sent_timestamp TEXT
+    )
+    """)
+
+    # Migration: Add batch_id to purchases
+    try:
+        cursor.execute("ALTER TABLE purchases ADD COLUMN batch_id TEXT")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+
     # Check if we already have seeded data
     cursor.execute("SELECT COUNT(*) as count FROM products")
     if cursor.fetchone()["count"] == 0:
@@ -431,6 +449,248 @@ def get_analytics_summary():
         "daily_revenue": daily_revenue,
         "inventory_metrics": inventory_metrics
     }
+
+def get_operations_summary():
+    """
+    Computes B2B & B2C consolidated operations, detailed Brazilian hardware taxes,
+    unified payment queue, and logistics tracking for V4.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 1. Volume flows
+    # B2C units sold
+    cursor.execute("""
+        SELECT TOTAL(quantidade) as b2c_units_sold 
+        FROM itens_pedido ip
+        JOIN pedidos p ON ip.id_pedido = p.id_pedido
+        WHERE p.status_pedido = 'PAID'
+    """)
+    b2c_units = cursor.fetchone()["b2c_units_sold"] or 0
+    
+    # B2B units bought
+    cursor.execute("""
+        SELECT TOTAL(qty) as b2b_units_bought 
+        FROM purchases 
+        WHERE status IN ('APPROVED', 'PROCESSED_PIX')
+    """)
+    b2b_units = cursor.fetchone()["b2b_units_bought"] or 0
+    
+    # 2. Financials & Taxes
+    # B2C Gross product revenue & shipping revenue
+    cursor.execute("""
+        SELECT 
+            TOTAL(valor_produtos) as b2c_product_revenue,
+            TOTAL(valor_frete) as b2c_shipping_revenue,
+            TOTAL(valor_total) as b2c_gross_revenue
+        FROM pedidos
+        WHERE status_pedido = 'PAID'
+    """)
+    b2c_fin = cursor.fetchone()
+    b2c_prod_rev = b2c_fin["b2c_product_revenue"] or 0.0
+    b2c_freight_rev = b2c_fin["b2c_shipping_revenue"] or 0.0
+    b2c_gross_rev = b2c_fin["b2c_gross_revenue"] or 0.0
+    
+    # B2B Procurement Cost
+    cursor.execute("""
+        SELECT TOTAL(qty * price) as b2b_procurement_cost
+        FROM purchases
+        WHERE status IN ('APPROVED', 'PROCESSED_PIX')
+    """)
+    b2b_cost = cursor.fetchone()["b2b_procurement_cost"] or 0.0
+    
+    # Brazilian hardware tax engineering:
+    # B2C Tax Deductions: 18% ICMS + 10% IPI on B2C products value (total 28% tax on sales)
+    tax_b2c_icms = b2c_prod_rev * 0.18
+    tax_b2c_ipi = b2c_prod_rev * 0.10
+    total_tax_b2c = tax_b2c_icms + tax_b2c_ipi
+    
+    # B2B Tax Credits: 12% ICMS credit recovered from procurement cost
+    tax_b2b_credit = b2b_cost * 0.12
+    
+    # Net tax balance owed to the tax authority
+    tax_balance_owed = max(0.0, total_tax_b2c - tax_b2b_credit)
+    
+    # Operational Margins
+    # Net product profit = (B2C product revenue - B2C taxes) - (B2B cost - B2B credits)
+    # Net overall profit = Net product profit + B2C shipping revenue (assuming shipping runs at break-even or is pass-through)
+    net_product_profit = (b2c_prod_rev - total_tax_b2c) - (b2b_cost - tax_b2b_credit)
+    net_overall_profit = net_product_profit + b2c_freight_rev
+    
+    profit_margin_pct = (net_overall_profit / b2c_gross_rev * 100) if b2c_gross_rev > 0 else 0.0
+    
+    # 3. Unified bank payment liquidations queue (merging B2B and B2C)
+    # We retrieve B2C payments
+    cursor.execute("""
+        SELECT 
+            'B2C' as type,
+            id_pedido as id,
+            cliente_nome as party,
+            forma_pagamento as method,
+            valor_total as amount,
+            status_pedido as raw_status,
+            data_criacao as timestamp
+        FROM pedidos
+        ORDER BY data_criacao DESC LIMIT 30
+    """)
+    b2c_payments = [dict(row) for row in cursor.fetchall()]
+    
+    # We retrieve B2B payments
+    cursor.execute("""
+        SELECT 
+            'B2B' as type,
+            id as id,
+            supplier as party,
+            'PIX' as method,
+            (qty * price) as amount,
+            status as raw_status,
+            timestamp as timestamp
+        FROM purchases
+        ORDER BY timestamp DESC LIMIT 30
+    """)
+    b2b_payments = [dict(row) for row in cursor.fetchall()]
+    
+    conn.close()
+    
+    # Merge and format payment status
+    unified_queue = []
+    
+    for p in b2c_payments:
+        # Determine status
+        bank_status = ""
+        status_color = ""
+        
+        if p["raw_status"] == "PAID":
+            if p["method"] == "PIX":
+                bank_status = "Liquidado via Pix BC"
+                status_color = "var(--color-emerald)"
+            elif p["method"] == "CREDIT_CARD":
+                bank_status = "Autorizado pelo Emissor"
+                status_color = "var(--color-emerald)"
+            else:
+                bank_status = "Compensado no Banco"
+                status_color = "var(--color-emerald)"
+        elif p["raw_status"] == "PENDING":
+            if p["method"] == "PIX":
+                bank_status = "Aguardando Pix Copia e Cola"
+                status_color = "var(--color-amber)"
+            elif p["method"] == "CREDIT_CARD":
+                bank_status = "Em Análise Anti-Fraude"
+                status_color = "var(--color-cyan)"
+            else:
+                bank_status = "Aguardando Boleto Bancário"
+                status_color = "var(--color-cyan)"
+        else: # CANCELLED
+            bank_status = "Recusado / Estornado"
+            status_color = "var(--color-rose)"
+            
+        unified_queue.append({
+            "type": "Venda (B2C)",
+            "id": p["id"],
+            "party": p["party"],
+            "method": p["method"],
+            "amount": p["amount"],
+            "bank_status": bank_status,
+            "status_color": status_color,
+            "timestamp": p["timestamp"]
+        })
+        
+    for p in b2b_payments:
+        bank_status = ""
+        status_color = ""
+        
+        if p["raw_status"] == "PROCESSED_PIX":
+            bank_status = "Remessa Pix Liquidada"
+            status_color = "var(--color-emerald)"
+        elif p["raw_status"] == "APPROVED":
+            bank_status = "Fila de Envio Pix"
+            status_color = "var(--color-amber)"
+        elif p["raw_status"] == "REJECTED":
+            bank_status = "Cancelado pelo Operador"
+            status_color = "var(--color-rose)"
+        else: # PENDING
+            bank_status = "Aguardando Aprovação IA"
+            status_color = "var(--color-cyan)"
+            
+        unified_queue.append({
+            "type": "Compra (B2B)",
+            "id": p["id"],
+            "party": p["party"],
+            "method": p["method"],
+            "amount": p["amount"],
+            "bank_status": bank_status,
+            "status_color": status_color,
+            "timestamp": p["timestamp"]
+        })
+        
+    # Sort unified queue DESC by timestamp
+    unified_queue.sort(key=lambda x: x["timestamp"], reverse=True)
+    unified_queue = unified_queue[:15] # Top 15 transactions
+    
+    return {
+        "metrics": {
+            "b2c_units_sold": int(b2c_units),
+            "b2b_units_bought": int(b2b_units),
+            "b2c_product_revenue": b2c_prod_rev,
+            "b2c_shipping_revenue": b2c_freight_rev,
+            "b2c_gross_revenue": b2c_gross_rev,
+            "b2b_procurement_cost": b2b_cost,
+            "taxes": {
+                "tax_b2c_icms": tax_b2c_icms,
+                "tax_b2c_ipi": tax_b2c_ipi,
+                "total_tax_b2c": total_tax_b2c,
+                "tax_b2b_credit": tax_b2b_credit,
+                "tax_balance_owed": tax_balance_owed
+            },
+            "net_product_profit": net_product_profit,
+            "net_overall_profit": net_overall_profit,
+            "profit_margin_pct": profit_margin_pct
+        },
+        "unified_queue": unified_queue
+    }
+
+def create_pix_batch(batch_id, total_transactions, total_amount):
+    conn = get_connection()
+    cursor = conn.cursor()
+    timestamp = datetime.datetime.now().isoformat()
+    cursor.execute(
+        """
+        INSERT INTO pix_batches (batch_id, timestamp, total_transactions, total_amount, sent_to_bank)
+        VALUES (?, ?, ?, ?, 0)
+        """,
+        (batch_id, timestamp, total_transactions, total_amount)
+    )
+    conn.commit()
+    conn.close()
+
+def get_pix_batches():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM pix_batches ORDER BY timestamp DESC")
+    batches = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return batches
+
+def get_batch_details(batch_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM purchases WHERE batch_id = ? ORDER BY timestamp DESC", (batch_id,))
+    purchases = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return purchases
+
+def mark_batch_sent(batch_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    sent_timestamp = datetime.datetime.now().isoformat()
+    cursor.execute(
+        "UPDATE pix_batches SET sent_to_bank = 1, sent_timestamp = ? WHERE batch_id = ?",
+        (sent_timestamp, batch_id)
+    )
+    success = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return success
 
 if __name__ == "__main__":
     init_db()

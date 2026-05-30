@@ -70,11 +70,17 @@ class PayRequest(BaseModel):
 
 @app.get("/")
 def read_root():
-    return FileResponse(os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "index.html"))
+    return FileResponse(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "index.html"),
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+    )
 
 @app.get("/static/app.js")
 def read_js():
-    return FileResponse(os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "app.js"))
+    return FileResponse(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "app.js"),
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+    )
 
 @app.get("/static/images/{image_name}")
 def read_image(image_name: str):
@@ -131,10 +137,56 @@ async def export_pix():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/pix/batches")
+def get_batches():
+    try:
+        return ucp_db.get_pix_batches()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/pix/batches/{batch_id}/details")
+def get_batch_purchases(batch_id: str):
+    try:
+        purchases = ucp_db.get_batch_details(batch_id)
+        # Enriquecer com as chaves Pix reais para visualização
+        for tx in purchases:
+            pix_info = pix_exporter.SUPPLIER_PIX_KEYS.get(
+                tx["supplier"], 
+                {"key_type": "EVP", "key": "38a7c29b-e85d-4f1a-b6c8-912a3d4f7e5b"}
+            )
+            tx["chave_pix"] = pix_info["key"]
+            tx["tipo_chave"] = pix_info["key_type"]
+        return purchases
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/pix/batches/{batch_id}/send")
+async def send_batch(batch_id: str):
+    try:
+        success = ucp_db.mark_batch_sent(batch_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Lote não encontrado.")
+            
+        # Notificar via SSE
+        await broadcast_event("log", {
+            "message": f"🏦 [Banco-Transmissão] Lote '{batch_id}' enviado e transmitido com sucesso para compensação bancária!"
+        })
+        await broadcast_event("pix_update", {})
+        return {"status": "success", "message": "Lote marcado como enviado com sucesso."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/a2a/log")
 async def post_log(log: LogMessage):
     """Helper to receive log messages from other servers (like gRPC) and stream to UI."""
     await broadcast_event("log", {"message": log.message})
+    return {"status": "success"}
+
+@app.post("/api/stock/broadcast")
+async def post_stock_broadcast():
+    """Broadcasts current stock levels to all SSE clients."""
+    await broadcast_event("stock_update", ucp_db.get_products())
     return {"status": "success"}
 
 async def run_purchasing_agent(sku: str, current_qty: int, min_qty: int):
@@ -502,6 +554,84 @@ async def pay_checkout(req: PayRequest, background_tasks: BackgroundTasks):
 def get_analytics():
     """Retorna os relatórios analíticos ricos usando Window Functions."""
     return ucp_db.get_analytics_summary()
+
+@app.get("/api/operations/summary")
+def get_operations():
+    """Retorna o resumo unificado de operações B2B & B2C para a V4."""
+    try:
+        # Obter estatísticas do banco de dados
+        data = ucp_db.get_operations_summary()
+        
+        # Mapeamento dinâmico de rastreamento logístico (B2C + B2B)
+        dir_despacho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "exports", "despacho")
+        deliveries = []
+        
+        # 1. Carregar despachos B2C gerados em exports/despacho
+        if os.path.exists(dir_despacho):
+            for file_name in os.listdir(dir_despacho):
+                if file_name.startswith("DESPACHO-") and file_name.endswith(".json"):
+                    file_path = os.path.join(dir_despacho, file_name)
+                    try:
+                        with open(file_path, "r", encoding="utf-8") as f:
+                            dispatch = json.load(f)
+                            pid = dispatch["id_pedido"]
+                            # Variar o status e progresso de forma divertida com base no último caractere do ID do pedido
+                            char_val = ord(pid[-1]) if pid else 0
+                            stages = [
+                                {"status": "Coletado pela Transportadora", "progress": 40, "carrier": "FedEx Express"},
+                                {"status": "Em Trânsito Regional", "progress": 65, "carrier": "DHL Logistics"},
+                                {"status": "Saiu para Entrega", "progress": 85, "carrier": "Correios Sedex"},
+                                {"status": "Entregue ao Destinatário", "progress": 100, "carrier": "Mercado Envios"}
+                            ]
+                            stage = stages[char_val % len(stages)]
+                            
+                            deliveries.append({
+                                "id": pid,
+                                "type": "Venda (B2C)",
+                                "party": dispatch["cliente_nome"],
+                                "address": dispatch["endereco_completo"],
+                                "weight": dispatch["peso_total_kg"],
+                                "volume": dispatch["volume_cubagem_m3"],
+                                "status": stage["status"],
+                                "progress": stage["progress"],
+                                "carrier": stage["carrier"]
+                            })
+                    except Exception:
+                        pass
+                        
+        # 2. Carregar cargas B2B em trânsito de fornecedores (APPROVED ou PROCESSED_PIX)
+        conn = ucp_db.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM purchases WHERE status IN ('APPROVED', 'PROCESSED_PIX') ORDER BY timestamp DESC LIMIT 10")
+        purchases = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        
+        for p in purchases:
+            if p["status"] == "PROCESSED_PIX":
+                status = "Em Trânsito Internacional"
+                progress = 60
+                carrier = "DHL Global Forwarding"
+            else: # APPROVED
+                status = "Aguardando Coleta no Hub do Fornecedor"
+                progress = 25
+                carrier = "MegaLog Transportes"
+                
+            deliveries.append({
+                "id": p["id"],
+                "type": f"Reabastecimento B2B ({p['sku']})",
+                "party": p["supplier"],
+                "address": "CD UCP (Centro de Distribuição Principal)",
+                "weight": round(p["qty"] * 0.15, 2),
+                "volume": round(p["qty"] * 0.0005, 4),
+                "status": status,
+                "progress": progress,
+                "carrier": carrier
+            })
+            
+        data["deliveries"] = deliveries
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/events")
 async def sse_events():

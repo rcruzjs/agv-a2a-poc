@@ -38,6 +38,9 @@ class DemandService(demand_pb2_grpc.DemandServiceServicer):
             new_qty = ucp_db.update_product_qty(sku, -qty)
             product = ucp_db.get_product(sku)
             
+            # Notificar UCP para atualizar interface em tempo real
+            self._notify_stock_update()
+            
             breach_detected = False
             msg = f"Nível de estoque atualizado. SKU {sku}: {new_qty} unidades restantes."
 
@@ -86,6 +89,13 @@ class DemandService(demand_pb2_grpc.DemandServiceServicer):
             httpx.post(f"{UCP_URL}/api/a2a/log", json={"message": message}, timeout=1.0)
         except Exception:
             # UCP server might not be running yet, fail silently
+            pass
+
+    def _notify_stock_update(self):
+        """Sends a notification to UCP to broadcast updated stock levels via SSE."""
+        try:
+            httpx.post(f"{UCP_URL}/api/stock/broadcast", timeout=1.0)
+        except Exception:
             pass
 
     def _trigger_purchasing_agent(self, sku, current_qty, min_qty):

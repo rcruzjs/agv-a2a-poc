@@ -118,9 +118,19 @@ def export_pix_batch():
     # 6. Atualiza o status no banco de dados para evitar pagamentos duplicados
     for order in approved_purchases:
         cursor.execute(
-            "UPDATE purchases SET status = 'PROCESSED_PIX' WHERE id = ?",
-            (order["id"],)
+            "UPDATE purchases SET status = 'PROCESSED_PIX', batch_id = ? WHERE id = ?",
+            (batch_id, order["id"])
         )
+        
+    # Salva o lote gerado na tabela pix_batches
+    now_iso = datetime.datetime.now().isoformat()
+    cursor.execute(
+        """
+        INSERT INTO pix_batches (batch_id, timestamp, total_transactions, total_amount, sent_to_bank)
+        VALUES (?, ?, ?, ?, 0)
+        """,
+        (batch_id, now_iso, len(approved_purchases), sum(order["qty"] * order["price"] for order in approved_purchases))
+    )
     conn.commit()
     conn.close()
     

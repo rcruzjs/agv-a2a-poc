@@ -40,12 +40,14 @@ eventSource.onerror = (err) => {
 eventSource.addEventListener("stock_update", (event) => {
     const products = JSON.parse(event.data);
     updateStockGrid(products);
+    refreshActiveTabOperations();
 });
 
 // 2. Log updates
 eventSource.addEventListener("log", (event) => {
     const logData = JSON.parse(event.data);
     addConsoleLog(logData.message);
+    refreshActiveTabOperations();
 });
 
 // 3. Purchase pending action card (A2UI)
@@ -56,18 +58,25 @@ eventSource.addEventListener("purchase_pending", (event) => {
 
 // 4. Pix updates
 eventSource.addEventListener("pix_update", (event) => {
-    fetchPendingPix();
+    refreshActiveTabPix();
+    refreshActiveTabOperations();
 });
 
 // 5. Analytics updates (V2)
 eventSource.addEventListener("analytics_update", (event) => {
     fetchAnalyticsData();
+    refreshActiveTabOperations();
 });
 
 function updateStockGrid(products) {
     if (!products || products.length === 0) {
         productsContainer.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 2rem;">Nenhum produto cadastrado no estoque.</div>`;
         return;
+    }
+
+    // Se o container tem o texto "Carregando" ou "Nenhum", limpa ele primeiro
+    if (productsContainer.querySelector("div[style*='text-align: center']")) {
+        productsContainer.innerHTML = "";
     }
 
     const skuImageMap = {
@@ -77,50 +86,94 @@ function updateStockGrid(products) {
         "SKU-004": "/static/images/gpu_rtx.png"
     };
 
-    productsContainer.innerHTML = "";
     products.forEach(p => {
         const isBreached = p.qtd_atual < p.qtd_minima;
         const progressPercentage = Math.min(100, (p.qtd_atual / (p.qtd_minima * 2)) * 100);
         const minPercentage = (p.qtd_minima / (p.qtd_minima * 2)) * 100;
         const imageUrl = skuImageMap[p.sku] || "/static/images/ssd_nvme.png";
         
-        const card = document.createElement("div");
-        card.className = "product-card";
-        card.innerHTML = `
-            <div class="product-meta" style="display: flex; align-items: center; gap: 12px; width: 100%; margin-bottom: 0.6rem;">
-                <img src="${imageUrl}" alt="${p.name}" style="width: 42px; height: 42px; border-radius: 8px; object-fit: cover; border: 1px solid var(--card-border); box-shadow: 0 4px 10px rgba(0,0,0,0.3);" />
-                <div style="flex: 1; min-width: 0;">
-                    <span class="product-name" style="display: block; font-weight: 500; font-size: 0.85rem; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.name}</span>
-                    <span class="product-sku" style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; background: rgba(99, 102, 241, 0.12); color: #a5b4fc; padding: 1px 4px; border-radius: 3px;">${p.sku}</span>
+        // Tenta encontrar o card existente para atualização cirúrgica
+        const existingCard = document.getElementById(`card-${p.sku}`);
+        if (existingCard) {
+            const qtyElement = document.getElementById(`qty-info-${p.sku}`);
+            const progressBar = document.getElementById(`progress-${p.sku}`);
+            
+            if (qtyElement) {
+                qtyElement.style.color = isBreached ? 'var(--color-rose)' : 'var(--color-emerald)';
+                qtyElement.innerHTML = `${p.qtd_atual} / ${p.qtd_minima} <span style="font-size: 0.7rem; color: var(--text-secondary); font-weight: normal;">(Mín)</span>`;
+            }
+            if (progressBar) {
+                progressBar.style.width = `${progressPercentage}%`;
+                progressBar.className = `progress-bar ${isBreached ? 'status-breach' : 'status-ok'}`;
+            }
+        } else {
+            // Cria um novo card se ainda não existir na interface
+            const card = document.createElement("div");
+            card.className = "product-card";
+            card.id = `card-${p.sku}`;
+            card.innerHTML = `
+                <div class="product-meta" style="display: flex; align-items: center; gap: 12px; width: 100%; margin-bottom: 0.6rem;">
+                    <img src="${imageUrl}" alt="${p.name}" style="width: 42px; height: 42px; border-radius: 8px; object-fit: cover; border: 1px solid var(--card-border); box-shadow: 0 4px 10px rgba(0,0,0,0.3);" />
+                    <div style="flex: 1; min-width: 0;">
+                        <span class="product-name" style="display: block; font-weight: 500; font-size: 0.85rem; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.name}</span>
+                        <span class="product-sku" style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; background: rgba(99, 102, 241, 0.12); color: #a5b4fc; padding: 1px 4px; border-radius: 3px;">${p.sku}</span>
+                    </div>
+                    <div class="product-qty-info" id="qty-info-${p.sku}" style="color: ${isBreached ? 'var(--color-rose)' : 'var(--color-emerald)'}; font-weight: 500; font-size: 0.85rem; white-space: nowrap;">
+                        ${p.qtd_atual} / ${p.qtd_minima} <span style="font-size: 0.7rem; color: var(--text-secondary); font-weight: normal;">(Mín)</span>
+                    </div>
                 </div>
-                <div class="product-qty-info" style="color: ${isBreached ? 'var(--color-rose)' : 'var(--color-emerald)'}; font-weight: 500; font-size: 0.85rem; white-space: nowrap;">
-                    ${p.qtd_atual} / ${p.qtd_minima} <span style="font-size: 0.7rem; color: var(--text-secondary); font-weight: normal;">(Mín)</span>
+                <div class="progress-container">
+                    <div class="progress-bar ${isBreached ? 'status-breach' : 'status-ok'}" id="progress-${p.sku}" style="width: ${progressPercentage}%"></div>
+                    <div class="min-indicator" style="left: ${minPercentage}%" title="Quantidade Mínima"></div>
                 </div>
-            </div>
-            <div class="progress-container">
-                <div class="progress-bar ${isBreached ? 'status-breach' : 'status-ok'}" style="width: ${progressPercentage}%"></div>
-                <div class="min-indicator" style="left: ${minPercentage}%" title="Quantidade Mínima"></div>
-            </div>
-        `;
-        productsContainer.appendChild(card);
+            `;
+            productsContainer.appendChild(card);
+        }
     });
 }
 
 function addConsoleLog(message) {
+    // Adiciona o log ao buffer em memória limitado a 150 registros
+    logHistoryBuffer.push(message);
+    while (logHistoryBuffer.length > 150) {
+        logHistoryBuffer.shift();
+    }
+
+    // Só realiza o processamento DOM pesado se a aba ativa for o Cockpit (stock)
+    if (activeTab === "stock") {
+        renderLogToDOM(message);
+    }
+}
+
+function renderLogToDOM(message) {
     const logLine = document.createElement("div");
     logLine.className = "console-line";
     
-    // Add custom styling based on prefix
+    // Estilos personalizados com base no prefixo do log
     if (message.includes("📥")) logLine.style.color = "#a5b4fc"; // Input / gRPC
-    else if (message.includes("⚠️")) logLine.style.color = "#f43f5e"; // Stock breach
+    else if (message.includes("⚠️")) logLine.style.color = "#f43f5e"; // Rompimento de estoque
     else if (message.includes("🤖")) logLine.style.color = "#c084fc"; // A2A Broker
-    else if (message.includes("🔍") || message.includes("⚖️")) logLine.style.color = "#38bdf8"; // MCP audit
-    else if (message.includes("✅")) logLine.style.color = "#34d399"; // Approved
-    else if (message.includes("❌")) logLine.style.color = "#fb7185"; // Error / Rejected
+    else if (message.includes("🔍") || message.includes("⚖️")) logLine.style.color = "#38bdf8"; // Auditoria MCP
+    else if (message.includes("✅")) logLine.style.color = "#34d399"; // Aprovado
+    else if (message.includes("❌")) logLine.style.color = "#fb7185"; // Erro / Rejeitado
     
     logLine.innerText = message;
     consoleRoot.appendChild(logLine);
+    
+    // Limita o console DOM a no máximo 150 nós para evitar travamentos de memória
+    while (consoleRoot.children.length > 150) {
+        consoleRoot.removeChild(consoleRoot.firstChild);
+    }
+    
     consoleRoot.scrollTop = consoleRoot.scrollHeight;
+}
+
+function rebuildConsoleFromBuffer() {
+    if (!consoleRoot) return;
+    consoleRoot.innerHTML = "";
+    logHistoryBuffer.forEach(msg => {
+        renderLogToDOM(msg);
+    });
 }
 
 function renderActionCard(order) {
@@ -223,34 +276,49 @@ let activeCheckoutPrice = 0.0;
 let activeCheckoutProductName = "";
 let currentCheckoutOrderId = "";
 
+// Otimização de Performance (SPA) - Estados Globais
+let activeTab = "stock";
+const logHistoryBuffer = [];
+
 function switchTab(tabName) {
+    activeTab = tabName;
+    
     const stockBtn = document.getElementById("tab-stock");
     const pixBtn = document.getElementById("tab-pix");
     const shopBtn = document.getElementById("tab-shop");
     const kpiBtn = document.getElementById("tab-kpi");
+    const opsBtn = document.getElementById("tab-ops");
     
     const stockContent = document.getElementById("stock-content");
     const pixContent = document.getElementById("pix-content");
     const shopContent = document.getElementById("shop-content");
     const kpiContent = document.getElementById("kpi-content");
+    const opsContent = document.getElementById("ops-content");
     
     // Reset buttons
-    [stockBtn, pixBtn, shopBtn, kpiBtn].forEach(btn => btn.classList.remove("active-tab"));
+    [stockBtn, pixBtn, shopBtn, kpiBtn, opsBtn].forEach(btn => { if (btn) btn.classList.remove("active-tab"); });
     // Reset contents
-    [stockContent, pixContent, shopContent, kpiContent].forEach(c => {
-        c.classList.remove("active-content");
-        c.style.display = "none";
+    [stockContent, pixContent, shopContent, kpiContent, opsContent].forEach(c => {
+        if (c) {
+            c.classList.remove("active-content");
+            c.style.display = "none";
+        }
     });
+    
+    // Fechar modais flutuantes globais ao trocar de aba para evitar sobreposição visual
+    closeBatchModal();
     
     if (tabName === "stock") {
         stockBtn.classList.add("active-tab");
         stockContent.classList.add("active-content");
         stockContent.style.display = "flex";
+        rebuildConsoleFromBuffer(); // Reconstrói o console de logs a partir do buffer em memória
     } else if (tabName === "pix") {
         pixBtn.classList.add("active-tab");
         pixContent.classList.add("active-content");
         pixContent.style.display = "flex";
         fetchPendingPix();
+        fetchPixBatches();
     } else if (tabName === "shop") {
         shopBtn.classList.add("active-tab");
         shopContent.classList.add("active-content");
@@ -262,6 +330,13 @@ function switchTab(tabName) {
         kpiContent.classList.add("active-content");
         kpiContent.style.display = "flex";
         fetchAnalyticsData();
+    } else if (tabName === "ops") {
+        if (opsBtn) opsBtn.classList.add("active-tab");
+        if (opsContent) {
+            opsContent.classList.add("active-content");
+            opsContent.style.display = "flex";
+        }
+        fetchOperationsData();
     }
 }
 
@@ -348,10 +423,135 @@ function exportPixBatchToServer() {
         addConsoleLog(`✅ [Lote-Pix] Lote '${data.batch_id}' gerado com sucesso! Valor total: R$ ${data.total.toFixed(2)}.`);
         alert(`Sucesso! Lote '${data.batch_id}' gerado na pasta /exports.`);
         fetchPendingPix();
+        fetchPixBatches();
     })
     .catch(err => {
         console.error(err);
         addConsoleLog(`❌ [Lote-Pix] Falha ao exportar lote Pix: ${err.message}`);
+    });
+}
+
+function refreshActiveTabPix() {
+    const pixContent = document.getElementById("pix-content");
+    if (pixContent && pixContent.style.display === "flex") {
+        fetchPendingPix();
+        fetchPixBatches();
+    }
+}
+
+function fetchPixBatches() {
+    const batchesBody = document.getElementById("pix-batches-body");
+    if (!batchesBody) return;
+    
+    fetch("/api/pix/batches")
+    .then(res => res.json())
+    .then(batches => {
+        if (!batches || batches.length === 0) {
+            batchesBody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 2rem;">Nenhum lote Pix gerado até o momento.</td>
+                </tr>
+            `;
+            return;
+        }
+        
+        batchesBody.innerHTML = "";
+        batches.forEach(b => {
+            const row = document.createElement("tr");
+            const statusText = b.sent_to_bank === 1 ? "🟢 Enviado ao Banco" : "🔴 Pendente de Envio";
+            const statusColor = b.sent_to_bank === 1 ? "var(--color-emerald)" : "var(--color-amber)";
+            const actionButton = b.sent_to_bank === 0 
+                ? `<button class="action-btn btn-approve" style="padding: 4px 8px; font-size: 0.72rem; border-radius: 4px; flex: none; width: auto; margin-right: 6px; cursor: pointer;" onclick="markBatchAsSent('${b.batch_id}')">🚀 Transmitir</button>` 
+                : `<span style="font-size: 0.72rem; color: var(--text-secondary); margin-right: 6px; font-weight: 500;">Transmitido</span>`;
+            
+            row.innerHTML = `
+                <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #a5b4fc; font-weight: 500;">${b.batch_id}</td>
+                <td style="font-size: 0.78rem;">${b.timestamp.replace('T', ' ').substring(0, 19)}</td>
+                <td>${b.total_transactions} txs</td>
+                <td style="color: var(--color-amber); font-weight: 600;">R$ ${b.total_amount.toFixed(2)}</td>
+                <td style="font-weight: 600; color: ${statusColor}; font-size: 0.78rem;">${statusText}</td>
+                <td style="display: flex; align-items: center;">
+                    ${actionButton}
+                    <button class="action-btn" style="padding: 4px 8px; font-size: 0.72rem; border-radius: 4px; flex: none; width: auto; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); color: #a5b4fc; cursor: pointer;" onclick="showBatchDetails('${b.batch_id}')">📋 Inspecionar</button>
+                </td>
+            `;
+            batchesBody.appendChild(row);
+        });
+    })
+    .catch(err => {
+        console.error("Erro ao buscar histórico de lotes Pix:", err);
+    });
+}
+
+function showBatchDetails(batchId) {
+    const modal = document.getElementById("batch-details-modal");
+    const title = document.getElementById("batch-modal-title");
+    const tbody = document.getElementById("batch-details-tbody");
+    
+    if (!modal || !tbody) return;
+    
+    title.innerText = `📋 Detalhes do Lote: ${batchId}`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;">Carregando transações...</td></tr>`;
+    modal.style.display = "block";
+    
+    fetch(`/api/pix/batches/${batchId}/details`)
+    .then(res => res.json())
+    .then(purchases => {
+        if (!purchases || purchases.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;">Nenhuma transação encontrada para este lote.</td></tr>`;
+            return;
+        }
+        
+        tbody.innerHTML = "";
+        purchases.forEach(tx => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #a5b4fc;">${tx.id}</td>
+                <td style="font-weight: 500; color: var(--text-primary);">${tx.supplier}</td>
+                <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-secondary);">${tx.chave_pix}</td>
+                <td>${tx.sku}</td>
+                <td>${tx.qty} un</td>
+                <td style="color: var(--color-amber); font-weight: 600; text-align: right;">R$ ${(tx.qty * tx.price).toFixed(2)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    })
+    .catch(err => {
+        console.error("Erro ao inspecionar lote:", err);
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--color-rose); padding: 2rem;">Erro ao carregar detalhes: ${err.message}</td></tr>`;
+    });
+}
+
+function closeBatchModal() {
+    const modal = document.getElementById("batch-details-modal");
+    if (modal) {
+        modal.style.display = "none";
+    }
+}
+
+function markBatchAsSent(batchId) {
+    if (!confirm(`Deseja simular o envio e a transmissão do lote '${batchId}' para compensação bancária?`)) {
+        return;
+    }
+    
+    addConsoleLog(`🏦 [Banco-Transmissão] Enviando remessa do lote ${batchId} para o canal de comunicação bancária...`);
+    
+    fetch(`/api/pix/batches/${batchId}/send`, {
+        method: "POST"
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Falha na transmissão bancária.");
+        return res.json();
+    })
+    .then(data => {
+        addConsoleLog(`✅ [Banco-Transmissão] Confirmação recebida! Lote '${batchId}' transmitido com sucesso.`);
+        alert(`Sucesso! Lote '${batchId}' transmitido com sucesso ao banco.`);
+        fetchPixBatches();
+    })
+    .catch(err => {
+        console.error(err);
+        addConsoleLog(`❌ [Banco-Transmissão] Falha ao transmitir lote Pix: ${err.message}`);
+        alert(`Erro na transmissão: ${err.message}`);
     });
 }
 
@@ -763,5 +963,103 @@ function fetchAnalyticsData() {
     })
     .catch(err => {
         console.error("Erro ao buscar analíticos de KPIs:", err);
+    });
+}
+
+// ==========================================
+// MÓDULOS DE RENDERIZAÇÃO E OPERAÇÕES DA V4
+// ==========================================
+
+function refreshActiveTabOperations() {
+    const opsContent = document.getElementById("ops-content");
+    if (opsContent && opsContent.style.display === "flex") {
+        fetchOperationsData();
+    }
+}
+
+function fetchOperationsData() {
+    const paymentQueue = document.getElementById("ops-payment-queue-body");
+    const deliveriesList = document.getElementById("ops-deliveries-list");
+    
+    if (!paymentQueue || !deliveriesList) return;
+    
+    fetch("/api/operations/summary")
+    .then(res => res.json())
+    .then(data => {
+        // 1. Renderizar Métricas Financeiras & Impostos
+        const m = data.metrics;
+        document.getElementById("ops-b2c-gross").innerText = `R$ ${m.b2c_gross_revenue.toFixed(2)}`;
+        document.getElementById("ops-b2b-cost").innerText = `R$ ${m.b2b_procurement_cost.toFixed(2)}`;
+        
+        document.getElementById("ops-tax-b2c").innerText = `R$ ${m.taxes.total_tax_b2c.toFixed(2)}`;
+        document.getElementById("ops-tax-credit-b2b").innerText = `R$ ${m.taxes.tax_b2b_credit.toFixed(2)}`;
+        document.getElementById("ops-tax-owed").innerText = `R$ ${m.taxes.tax_balance_owed.toFixed(2)}`;
+        
+        document.getElementById("ops-net-profit").innerText = `R$ ${m.net_overall_profit.toFixed(2)}`;
+        document.getElementById("ops-margin-pct").innerText = `${m.profit_margin_pct.toFixed(2)} %`;
+        
+        // 2. Renderizar Volumes de Estoque
+        document.getElementById("ops-b2b-volume").innerText = `${m.b2b_units_bought} un`;
+        document.getElementById("ops-b2c-volume").innerText = `${m.b2c_units_sold} un`;
+        
+        // 3. Renderizar Fila de Liquidação Bancária Centralizada (B2C + B2B)
+        if (!data.unified_queue || data.unified_queue.length === 0) {
+            paymentQueue.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 2rem;">Nenhuma transação de liquidação registrada.</td>
+                </tr>
+            `;
+        } else {
+            paymentQueue.innerHTML = "";
+            data.unified_queue.forEach(tx => {
+                const row = document.createElement("tr");
+                const typeStyle = tx.type.includes("B2C") ? "color: var(--color-cyan);" : "color: var(--color-indigo);";
+                
+                row.innerHTML = `
+                    <td style="font-weight: 600; ${typeStyle}">${tx.type}</td>
+                    <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #a5b4fc;">${tx.id}</td>
+                    <td style="font-weight: 500; color: var(--text-primary);">${tx.party}</td>
+                    <td style="color: var(--color-amber); font-weight: 600;">R$ ${tx.amount.toFixed(2)}</td>
+                    <td style="text-align: right; font-weight: 600; color: ${tx.status_color};">${tx.bank_status}</td>
+                `;
+                paymentQueue.appendChild(row);
+            });
+        }
+        
+        // 4. Renderizar Timelines Logísticas & Timelines de Entregas
+        if (!data.deliveries || data.deliveries.length === 0) {
+            deliveriesList.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 3rem; font-size: 0.8rem;">Sem despachos logísticos ativos no momento.</div>`;
+        } else {
+            deliveriesList.innerHTML = "";
+            data.deliveries.forEach(del => {
+                const deliveryCard = document.createElement("div");
+                deliveryCard.className = "product-card";
+                deliveryCard.style.background = "rgba(255,255,255,0.015)";
+                deliveryCard.style.padding = "12px 14px";
+                
+                deliveryCard.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; font-size: 0.78rem;">
+                        <div>
+                            <span style="font-weight: 700; color: #fff;">${del.type} | Rastreio ${del.id}</span>
+                            <span style="display: block; font-size: 0.68rem; color: var(--text-secondary); margin-top: 2px;">Entregador: <strong>${del.carrier}</strong> | Destino: ${del.address}</span>
+                        </div>
+                        <span style="font-weight: 600; color: var(--color-cyan);">${del.status}</span>
+                    </div>
+                    
+                    <div class="progress-container" style="height: 6px; margin: 6px 0;">
+                        <div class="progress-bar" style="width: ${del.progress}%; background: linear-gradient(90deg, var(--color-indigo), var(--color-cyan));"></div>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-secondary);">
+                        <span>Cubagem: ${del.volume.toFixed(4)} m³ | Peso: ${del.weight.toFixed(2)} kg</span>
+                        <span>Progresso de Envio: ${del.progress}%</span>
+                    </div>
+                `;
+                deliveriesList.appendChild(deliveryCard);
+            });
+        }
+    })
+    .catch(err => {
+        console.error("Erro ao buscar dados operacionais de V4:", err);
     });
 }

@@ -16,6 +16,7 @@ __pycache__/
 
 # Lotes Pix exportados
 exports/
+test_exports/
 
 # IDEs e configurações locais
 .vscode/
